@@ -1,0 +1,9 @@
+RewriteEngine On
+
+RewriteRule ^app/ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^routes/ - [F,L]
+
+RewriteCond %{REQUEST_URI} !^/leccionario-digital/public/
+RewriteRule ^(.*)$ public/$1 [L,R=301]
