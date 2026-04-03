@@ -29,19 +29,19 @@
                 <tbody>
                     <?php foreach ($usuarios as $u): ?>
                     <tr>
-                        <td><?= htmlspecialchars($u->nombre) ?> <?= htmlspecialchars($u->apellido) ?></td>
-                        <td><?= htmlspecialchars($u->email) ?></td>
-                        <td><?= $u->telefono ? htmlspecialchars($u->telefono) : '-' ?></td>
-                        <td><?= str_replace(',', ', ', htmlspecialchars($u->roles)) ?></td>
+                        <td><?= htmlspecialchars($u->getNombre()) ?> <?= htmlspecialchars($u->getApellido()) ?></td>
+                        <td><?= htmlspecialchars($u->getEmail()) ?></td>
+                        <td><?= $u->getTelefono() ? htmlspecialchars($u->getTelefono()) : '-' ?></td>
+                        <td><?= htmlspecialchars(implode(', ', array_map(fn($r) => is_object($r) ? $r->nombre : $r['nombre'], $u->getRoles()))) ?></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-editar" 
-                                    data-id="<?= $u->id ?>">
+                                    data-id="<?= $u->getId() ?>">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-warning btn-resetear" data-id="<?= $u->id ?>" title="Resetear contraseña">
+                            <button class="btn btn-sm btn-outline-warning btn-resetear" data-id="<?= $u->getId() ?>" title="Resetear contraseña">
                                 <i class="fas fa-key"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $u->id ?>">
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $u->getId() ?>">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -100,9 +100,9 @@
                                 <?php foreach ($roles as $rol): ?>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="roles[]" 
-                                           value="<?= $rol->id ?>" id="rol_<?= $rol->id ?>">
-                                    <label class="form-check-label" for="rol_<?= $rol->id ?>">
-                                        <?= htmlspecialchars($rol->nombre) ?>
+                                           value="<?= is_object($rol) ? $rol->id : $rol['id'] ?>" id="rol_<?= is_object($rol) ? $rol->id : $rol['id'] ?>">
+                                    <label class="form-check-label" for="rol_<?= is_object($rol) ? $rol->id : $rol['id'] ?>">
+                                        <?= htmlspecialchars(is_object($rol) ? $rol->nombre : $rol['nombre']) ?>
                                     </label>
                                 </div>
                                 <?php endforeach; ?>
@@ -120,9 +120,9 @@
                                 <?php foreach ($asignaturas as $asig): ?>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="asignaturas[]" 
-                                           value="<?= $asig->id ?>" id="asig_<?= $asig->id ?>">
-                                    <label class="form-check-label" for="asig_<?= $asig->id ?>">
-                                        <?= htmlspecialchars($asig->nombre) ?>
+                                           value="<?= is_object($asig) ? $asig->id : $asig['id'] ?>" id="asig_<?= is_object($asig) ? $asig->id : $asig['id'] ?>">
+                                    <label class="form-check-label" for="asig_<?= is_object($asig) ? $asig->id : $asig['id'] ?>">
+                                        <?= htmlspecialchars(is_object($asig) ? $asig->nombre : $asig['nombre']) ?>
                                     </label>
                                 </div>
                                 <?php endforeach; ?>
@@ -429,13 +429,27 @@
     function eliminarUsuario(id) {
         Swal.fire({
             title: '¿Eliminar usuario?',
-            text: 'Esta acción no se puede deshacer. El usuario quedará inactivo.',
+            html: 'Esta acción no se puede deshacer fácilmente.<br><br>' +
+                  '<div class="mb-3 text-start">' +
+                  '<label for="deleteReason" class="form-label">Motivo de eliminación:</label>' +
+                  '<textarea class="form-control" id="deleteReason" rows="2" ' +
+                  'placeholder="Ej: Usuario renunció, Cambio de personal, etc."></textarea>' +
+                  '</div>',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            preConfirm: function() {
+                var reason = document.getElementById('deleteReason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('Por favor ingrese el motivo de eliminación');
+                    return false;
+                }
+                return reason;
+            }
         }).then(function(result) {
             if (result.isConfirmed) {
+                var reason = result.value;
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', BASE_URL + '/coordinador/usuarios/eliminar', true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
@@ -461,7 +475,7 @@
                     }
                 };
                 
-                xhr.send(JSON.stringify({ id: parseInt(id) }));
+                xhr.send(JSON.stringify({ id: parseInt(id), reason: reason }));
             }
         });
     }

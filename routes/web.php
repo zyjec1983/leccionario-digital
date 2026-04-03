@@ -14,7 +14,11 @@ function requireRoutes(Router $router): void
         redirect('auth/login');
     });
 
-    $router->get('auth/login', 'AuthController@login');
+    $router->get('auth/login', function() {
+        requireLogin();
+        $ctrl = new AuthController();
+        $ctrl->login();
+    });
     $router->post('auth/authenticate', 'AuthController@authenticate');
     $router->get('auth/select-role', 'AuthController@selectRole');
     $router->post('auth/set-role', 'AuthController@setRole');
@@ -101,6 +105,12 @@ function requireRoutes(Router $router): void
         $ctrl->usuarios();
     });
 
+    $router->get('coordinador/usuarios-eliminados', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->usuariosEliminados();
+    });
+
     $router->post('coordinador/usuarios/guardar', function() {
         requireAuth('coordinador');
         $ctrl = new CoordinadorController();
@@ -111,6 +121,24 @@ function requireRoutes(Router $router): void
         requireAuth('coordinador');
         $ctrl = new CoordinadorController();
         $ctrl->eliminarUsuario();
+    });
+
+    $router->post('coordinador/usuarios/restaurar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->restaurarUsuario();
+    });
+
+    $router->post('coordinador/usuarios/buscar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarUsuarios();
+    });
+
+    $router->post('coordinador/usuarios/buscar-eliminados', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarUsuariosEliminados();
     });
 
     $router->post('coordinador/usuarios/obtener', function() {
@@ -149,6 +177,12 @@ function requireRoutes(Router $router): void
         $ctrl->cursos();
     });
 
+    $router->get('coordinador/cursos-eliminados', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->cursosEliminados();
+    });
+
     $router->post('coordinador/cursos/guardar', function() {
         requireAuth('coordinador');
         $ctrl = new CoordinadorController();
@@ -161,10 +195,40 @@ function requireRoutes(Router $router): void
         $ctrl->eliminarCurso();
     });
 
+    $router->post('coordinador/cursos/restaurar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->restaurarCurso();
+    });
+
+    $router->post('coordinador/cursos/obtener', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->obtenerCursos();
+    });
+
+    $router->post('coordinador/cursos/buscar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarCursos();
+    });
+
+    $router->post('coordinador/cursos/buscar-eliminados', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarCursosEliminados();
+    });
+
     $router->get('coordinador/asignaturas', function() {
         requireAuth('coordinador');
         $ctrl = new CoordinadorController();
         $ctrl->asignaturas();
+    });
+
+    $router->get('coordinador/asignaturas-eliminadas', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->asignaturasEliminadas();
     });
 
     $router->post('coordinador/asignaturas/guardar', function() {
@@ -177,6 +241,24 @@ function requireRoutes(Router $router): void
         requireAuth('coordinador');
         $ctrl = new CoordinadorController();
         $ctrl->eliminarAsignatura();
+    });
+
+    $router->post('coordinador/asignaturas/restaurar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->restaurarAsignatura();
+    });
+
+    $router->post('coordinador/asignaturas/buscar', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarAsignaturas();
+    });
+
+    $router->post('coordinador/asignaturas/buscar-eliminadas', function() {
+        requireAuth('coordinador');
+        $ctrl = new CoordinadorController();
+        $ctrl->buscarAsignaturasEliminadas();
     });
 
     $router->get('coordinador/configuracion', function() {

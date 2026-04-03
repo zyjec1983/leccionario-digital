@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../Core/Database.php';
-require_once __DIR__ . '/../Models/AuthModel.php';
+require_once __DIR__ . '/../Models/UsuarioModel.php';
 
 class AuthRepository
 {
@@ -12,7 +12,7 @@ class AuthRepository
         $this->db = Database::getInstance();
     }
 
-    public function findByEmail(string $email): ?AuthModel
+    public function findByEmail(string $email): ?UsuarioModel
     {
         $row = $this->db->fetch(
             "SELECT * FROM usuarios WHERE email = :email AND activo = 1",
@@ -23,10 +23,10 @@ class AuthRepository
             return null;
         }
 
-        return AuthModel::fromDatabase($row);
+        return UsuarioModel::fromDatabase($row);
     }
 
-    public function findById(int $id): ?AuthModel
+    public function findById(int $id): ?UsuarioModel
     {
         $row = $this->db->fetch(
             "SELECT * FROM usuarios WHERE id = :id AND activo = 1",
@@ -37,7 +37,7 @@ class AuthRepository
             return null;
         }
 
-        return AuthModel::fromDatabase($row);
+        return UsuarioModel::fromDatabase($row);
     }
 
     public function verifyPassword(string $password, string $hash): bool

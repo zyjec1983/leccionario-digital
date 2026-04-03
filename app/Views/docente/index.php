@@ -44,7 +44,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-1">Completados hoy</h6>
-                        <h3 class="mb-0"><?= count(array_filter($leccionesHoy, fn($l) => $l->estado === 'completado')) ?></h3>
+                        <h3 class="mb-0"><?= count(array_filter($leccionesHoy, fn($l) => ($l['estado'] ?? '') === 'completado')) ?></h3>
                     </div>
                     <div class="text-success">
                         <i class="fas fa-check-circle fa-2x"></i>
@@ -84,25 +84,25 @@
                 <tbody>
                     <?php foreach ($leccionesHoy as $leccion): ?>
                     <tr>
-                        <td><?= substr($leccion->hora_inicio, 0, 5) ?> - <?= substr($leccion->hora_fin, 0, 5) ?></td>
-                        <td><?= $leccion->curso ?></td>
-                        <td><?= $leccion->asignatura ?></td>
+                        <td><?= substr($leccion['hora_inicio'] ?? '', 0, 5) ?> - <?= substr($leccion['hora_fin'] ?? '', 0, 5) ?></td>
+                        <td><?= htmlspecialchars($leccion['curso'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($leccion['asignatura'] ?? '') ?></td>
                         <td>
-                            <?php if ($leccion->estado === 'completado'): ?>
+                            <?php if (($leccion['estado'] ?? '') === 'completado'): ?>
                             <span class="badge bg-success">Completado</span>
-                            <?php elseif ($leccion->estado === 'atrasado'): ?>
+                            <?php elseif (($leccion['estado'] ?? '') === 'atrasado'): ?>
                             <span class="badge bg-danger">Atrasado</span>
                             <?php else: ?>
                             <span class="badge bg-warning">Pendiente</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if ($leccion->estado === 'completado'): ?>
-                            <a href="<?= route('docente/leccionarios/ver/' . $leccion->id) ?>" class="btn btn-sm btn-outline-primary">
+                            <?php if (($leccion['estado'] ?? '') === 'completado'): ?>
+                            <a href="<?= route('docente/leccionarios/ver/' . ($leccion['id'] ?? 0)) ?>" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-eye"></i> Ver
                             </a>
                             <?php else: ?>
-                            <a href="<?= route('docente/leccionarios/nuevo/' . $leccion->horario_id . '/' . $leccion->fecha) ?>" 
+                            <a href="<?= route('docente/leccionarios/nuevo/' . ($leccion['horario_id'] ?? 0) . '/' . ($leccion['fecha'] ?? '')) ?>" 
                                class="btn btn-sm btn-primary">
                                 <i class="fas fa-pen"></i> Registrar
                             </a>

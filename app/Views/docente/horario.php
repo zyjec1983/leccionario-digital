@@ -73,7 +73,7 @@ $horas = [
 
 $horarioPorCelda = [];
 foreach ($horarios as $h) {
-    $key = $h->dia_semana . '-' . substr($h->hora_inicio, 0, 5);
+    $key = ($h['dia_semana'] ?? 0) . '-' . substr($h['hora_inicio'] ?? '', 0, 5);
     $horarioPorCelda[$key] = $h;
 }
 ?>
@@ -110,7 +110,7 @@ foreach ($horarios as $h) {
                         <?php
                         $key = $dia . '-' . $inicio;
                         $celda = $horarioPorCelda[$key] ?? null;
-                        $celdaId = $celda ? $celda->id : null;
+                        $celdaId = $celda ? ($celda['id'] ?? null) : null;
                         ?>
                         <td class="<?= $receso ? 'table-secondary' : '' ?>" 
                             style="min-width: 150px; min-height: 80px;"
@@ -122,11 +122,11 @@ foreach ($horarios as $h) {
                             <?php if ($receso): ?>
                             <span class="text-muted"><i class="fas fa-coffee"></i></span>
                             <?php elseif ($celda): ?>
-                            <div class="clase-guardada" data-id="<?= $celda->id ?>">
-                                <strong><?= htmlspecialchars($celda->curso) ?></strong><br>
-                                <span class="text-muted small"><?= htmlspecialchars($celda->asignatura) ?></span>
-                                <?php if (!empty($celda->aula)): ?>
-                                <br><i class="fas fa-door me-1"></i><?= htmlspecialchars($celda->aula) ?>
+                            <div class="clase-guardada" data-id="<?= $celda['id'] ?? 0 ?>">
+                                <strong><?= htmlspecialchars(trim(($celda['curso'] ?? '') . ' ' . ($celda['seccion'] ?? ''))) ?></strong><br>
+                                <span class="text-muted small"><?= htmlspecialchars($celda['asignatura'] ?? '') ?></span>
+                                <?php if (!empty($celda['aula'])): ?>
+                                <br><i class="fas fa-door me-1"></i><?= htmlspecialchars($celda['aula']) ?>
                                 <?php endif; ?>
                                 <?php if ($horarioEditable): ?>
                                 <div class="mt-2">
@@ -176,7 +176,9 @@ foreach ($horarios as $h) {
                     <select class="form-select" id="claseCurso" required>
                         <option value="">Seleccionar curso...</option>
                         <?php foreach ($cursos as $curso): ?>
-                        <option value="<?= $curso->id ?>"><?= htmlspecialchars($curso->nombre) ?></option>
+                        <option value="<?= $curso->id ?>">
+                            <?= htmlspecialchars(trim(($curso->nombre ?? '') . ' ' . ($curso->seccion ?? ''))) ?>
+                        </option>
                         <?php endforeach; ?>
                     </select>
                 </div>

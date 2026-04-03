@@ -3,6 +3,7 @@
 class Session
 {
     private static bool $started = false;
+    private static int $inactivityTimeout = 900;
 
     public static function start(): void
     {
@@ -30,14 +31,34 @@ class Session
         
         self::$started = true;
         
-        if (!isset($_SESSION['_created'])) {
-            $_SESSION['_created'] = time();
+        if (self::isLoggedIn()) {
+            self::checkInactivityTimeout();
+        } else {
+            self::regenerate();
+        }
+    }
+
+    private static function checkInactivityTimeout(): void
+    {
+        $lastActivity = $_SESSION['_last_activity'] ?? null;
+        
+        if ($lastActivity === null) {
+            $_SESSION['_last_activity'] = time();
+            return;
         }
         
-        if (isset($_SESSION['_created']) && (time() - $_SESSION['_created']) > $config['lifetime']) {
+        if ((time() - $lastActivity) > self::$inactivityTimeout) {
             self::destroy();
             self::start();
+            return;
         }
+        
+        $_SESSION['_last_activity'] = time();
+    }
+
+    public static function touch(): void
+    {
+        $_SESSION['_last_activity'] = time();
     }
 
     public static function has(string $key): bool
@@ -85,7 +106,7 @@ class Session
 
     public static function isLoggedIn(): bool
     {
-        return self::has('user_id');
+        return isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null;
     }
 
     public static function getUserId()
@@ -101,5 +122,19 @@ class Session
     public static function setCurrentRole(string $role): void
     {
         self::set('current_role', $role);
+    }
+    
+    public static function isTimedOut(): bool
+    {
+        if (!self::isLoggedIn()) {
+            return false;
+        }
+        
+        $lastActivity = $_SESSION['_last_activity'] ?? null;
+        if ($lastActivity === null) {
+            return false;
+        }
+        
+        return (time() - $lastActivity) > self::$inactivityTimeout;
     }
 }

@@ -94,11 +94,20 @@
                             <li><a class="dropdown-item" href="<?= route('coordinador/usuarios') ?>">
                                 <i class="fas fa-users me-2"></i>Usuarios
                             </a></li>
+                            <li><a class="dropdown-item" href="<?= route('coordinador/usuarios-eliminados') ?>">
+                                <i class="fas fa-users-slash me-2"></i>Usuarios Eliminados
+                            </a></li>
                             <li><a class="dropdown-item" href="<?= route('coordinador/cursos') ?>">
                                 <i class="fas fa-graduation-cap me-2"></i>Cursos
                             </a></li>
+                            <li><a class="dropdown-item" href="<?= route('coordinador/cursos-eliminados') ?>">
+                                <i class="fas fa-graduation-cap me-2"></i>Cursos Eliminados
+                            </a></li>
                             <li><a class="dropdown-item" href="<?= route('coordinador/asignaturas') ?>">
                                 <i class="fas fa-book me-2"></i>Asignaturas
+                            </a></li>
+                            <li><a class="dropdown-item" href="<?= route('coordinador/asignaturas-eliminadas') ?>">
+                                <i class="fas fa-book me-2"></i>Asignaturas Eliminadas
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="<?= route('coordinador/configuracion') ?>">

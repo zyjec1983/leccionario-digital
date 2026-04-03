@@ -10,21 +10,21 @@
                 <div class="alert alert-info mb-4">
                     <div class="row">
                         <div class="col-md-6">
-                            <strong>Curso:</strong> <?= $horario->curso ?><br>
-                            <strong>Asignatura:</strong> <?= $horario->asignatura ?> (<?= $horario->codigo ?>)
+                            <strong>Curso:</strong> <?= htmlspecialchars($horario['curso'] ?? '') ?><br>
+                            <strong>Asignatura:</strong> <?= htmlspecialchars(($horario['asignatura'] ?? '') . ' (' . ($horario['codigo'] ?? '') . ')') ?>
                         </div>
                         <div class="col-md-6">
                             <strong>Fecha:</strong> <?= date('d/m/Y', strtotime($fecha)) ?><br>
-                            <strong>Hora:</strong> <?= substr($horario->hora_inicio, 0, 5) ?> - <?= substr($horario->hora_fin, 0, 5) ?>
-                            <?php if ($horario->aula): ?>
-                            <br><strong>Aula:</strong> <?= $horario->aula ?>
+                            <strong>Hora:</strong> <?= substr($horario['hora_inicio'] ?? '', 0, 5) ?> - <?= substr($horario['hora_fin'] ?? '', 0, 5) ?>
+                            <?php if (!empty($horario['aula'])): ?>
+                            <br><strong>Aula:</strong> <?= htmlspecialchars($horario['aula']) ?>
                             <?php endif; ?>
                         </div>
                     </div>
                 </div>
 
                 <form id="leccionarioForm">
-                    <input type="hidden" name="horario_id" value="<?= $horario->id ?>">
+                    <input type="hidden" name="horario_id" value="<?= $horario['id'] ?? 0 ?>">
                     <input type="hidden" name="fecha" value="<?= $fecha ?>">
 
                     <div class="mb-3">
@@ -32,19 +32,19 @@
                             Contenido desarrollado <span class="text-danger">*</span>
                         </label>
                         <textarea class="form-control" id="contenido" name="contenido" rows="6" required
-                                  placeholder="Describe el contenido tratado en clase..."><?= $leccionario->contenido ?? '' ?></textarea>
+                                  placeholder="Describe el contenido tratado en clase..."><?= htmlspecialchars($leccionario['contenido'] ?? '') ?></textarea>
                     </div>
 
                     <div class="mb-3">
                         <label for="observaciones" class="form-label">Observaciones</label>
                         <textarea class="form-control" id="observaciones" name="observaciones" rows="3"
-                                  placeholder="Observaciones adicionales (opcional)..."><?= $leccionario->observaciones ?? '' ?></textarea>
+                                  placeholder="Observaciones adicionales (opcional)..."><?= htmlspecialchars($leccionario['observaciones'] ?? '') ?></textarea>
                     </div>
 
                     <div class="mb-4">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="firmado" name="firmado" 
-                                   <?= ($leccionario->firmado ?? false) ? 'checked' : '' ?>>
+                                   <?= (!empty($leccionario['firmado'])) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="firmado">
                                 <i class="fas fa-signature me-1"></i>Confirmo que realicé la clase y los datos son correctos
                             </label>

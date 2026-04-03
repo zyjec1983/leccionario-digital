@@ -71,39 +71,39 @@
                 <tbody>
                     <?php foreach ($leccionarios as $leccion): ?>
                     <?php 
-                    $esPasado = strtotime($leccion->fecha) < strtotime(date('Y-m-d'));
-                    $puedeEditar = in_array($leccion->estado, ['pendiente', 'atrasado']);
+                    $esPasado = strtotime($leccion['fecha'] ?? date('Y-m-d')) < strtotime(date('Y-m-d'));
+                    $puedeEditar = in_array($leccion['estado'] ?? '', ['pendiente', 'atrasado']);
                     ?>
-                    <tr class="<?= $leccion->estado === 'atrasado' ? 'table-danger' : ($leccion->estado === 'pendiente' && $esPasado ? 'table-warning' : '') ?>">
+                    <tr class="<?= ($leccion['estado'] ?? '') === 'atrasado' ? 'table-danger' : (($leccion['estado'] ?? '') === 'pendiente' && $esPasado ? 'table-warning' : '') ?>">
                         <td>
-                            <?= date('d/m/Y', strtotime($leccion->fecha)) ?>
-                            <?php if ($esPasado && $leccion->estado !== 'completado'): ?>
+                            <?= date('d/m/Y', strtotime($leccion['fecha'] ?? date('Y-m-d'))) ?>
+                            <?php if ($esPasado && ($leccion['estado'] ?? '') !== 'completado'): ?>
                             <i class="fas fa-exclamation-circle text-warning ms-1" title="Fecha pasada"></i>
                             <?php endif; ?>
                         </td>
-                        <td><?= substr($leccion->hora_inicio, 0, 5) ?></td>
-                        <td><?= htmlspecialchars($leccion->curso) ?></td>
-                        <td><?= htmlspecialchars($leccion->asignatura) ?></td>
+                        <td><?= substr($leccion['hora_inicio'] ?? '', 0, 5) ?></td>
+                        <td><?= htmlspecialchars($leccion['curso'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($leccion['asignatura'] ?? '') ?></td>
                         <td>
-                            <?php if ($leccion->estado === 'completado'): ?>
+                            <?php if (($leccion['estado'] ?? '') === 'completado'): ?>
                             <span class="badge bg-success">Completado</span>
-                            <?php elseif ($leccion->estado === 'atrasado'): ?>
+                            <?php elseif (($leccion['estado'] ?? '') === 'atrasado'): ?>
                             <span class="badge bg-danger">Atrasado</span>
                             <?php else: ?>
                             <span class="badge bg-warning">Pendiente</span>
                             <?php endif; ?>
-                            <?php if ($leccion->firmado): ?>
+                            <?php if (!empty($leccion['firmado'])): ?>
                             <i class="fas fa-signature text-success ms-1" title="Firmado"></i>
                             <?php endif; ?>
                         </td>
                         <td>
                             <?php if ($puedeEditar): ?>
-                            <a href="<?= route('docente/leccionarios/nuevo/' . $leccion->horario_id . '/' . $leccion->fecha) ?>" 
+                            <a href="<?= route('docente/leccionarios/nuevo/' . ($leccion['horario_id'] ?? 0) . '/' . ($leccion['fecha'] ?? '')) ?>" 
                                class="btn btn-sm btn-primary">
                                 <i class="fas fa-pen"></i> Llenar
                             </a>
                             <?php else: ?>
-                            <a href="<?= route('docente/leccionarios/ver/' . $leccion->id) ?>" 
+                            <a href="<?= route('docente/leccionarios/ver/' . ($leccion['id'] ?? 0)) ?>" 
                                class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-eye"></i> Ver
                             </a>

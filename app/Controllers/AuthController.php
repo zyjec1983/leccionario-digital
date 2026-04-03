@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../Core/Result.php';
+require_once __DIR__ . '/../Core/Session.php';
+require_once __DIR__ . '/../Models/UsuarioModel.php';
 require_once __DIR__ . '/../Repositories/AuthRepository.php';
 
 class AuthController extends Controller
@@ -24,7 +26,11 @@ class AuthController extends Controller
             }
         }
 
-        $this->viewOnly('auth/login');
+        $showTimeoutMessage = Session::flash('timeout') === true;
+        
+        $this->viewOnly('auth/login', [
+            'timeoutMessage' => $showTimeoutMessage
+        ]);
     }
 
     public function authenticate(): void
@@ -65,6 +71,9 @@ class AuthController extends Controller
         $emailExiste = $this->authRepo->emailExists($email);
         $user = $this->authRepo->findByEmail($email);
 
+        // Debug: log authentication attempt
+        error_log("Auth attempt - Email: $email, User found: " . ($user ? 'yes' : 'no') . ", Email exists: " . ($emailExiste ? 'yes' : 'no'));
+
         if ($user && $this->authRepo->verifyPassword($password, $user->getPassword())) {
             $this->authRepo->clearLoginAttempts($clientIP, $email);
             $this->authRepo->updateLastLogin($user->getId());
@@ -74,10 +83,12 @@ class AuthController extends Controller
 
             $this->setUserSession($user);
 
+            error_log("Auth success - User ID: " . $user->getId() . ", Roles: " . count($user->getRoles()));
+
             if ($user->tieneMultiplesRoles()) {
                 $this->json([
                     'success' => true,
-                    'message' => 'Multirol detectado',
+                    'message' => 'Multirol detectado. Seleccione un rol para continuar.',
                     'redirect' => route('auth/select-role')
                 ]);
             } else {
@@ -87,13 +98,13 @@ class AuthController extends Controller
                 if ($role === 'docente' && $user->isPrimerLogin()) {
                     $this->json([
                         'success' => true,
-                        'message' => 'Login exitoso. Debe cambiar su contraseña',
+                        'message' => 'Login exitoso. Primero debe cambiar su contraseña temporal.',
                         'redirect' => route('docente/cambiar-password')
                     ]);
                 } else {
                     $this->json([
                         'success' => true,
-                        'message' => 'Login exitoso',
+                        'message' => 'Login exitoso. Redirigiendo...',
                         'redirect' => route($redirect)
                     ]);
                 }
@@ -104,8 +115,10 @@ class AuthController extends Controller
 
             if (!$emailExiste) {
                 $msg = 'El email no está registrado en el sistema';
+                error_log("Auth failed - Email not found: $email");
             } else {
                 $msg = 'Contraseña incorrecta';
+                error_log("Auth failed - Wrong password for: $email");
             }
 
             if ($remaining > 0 && $remaining <= 2) {
@@ -119,7 +132,7 @@ class AuthController extends Controller
         }
     }
 
-    private function setUserSession(AuthModel $user): void
+    private function setUserSession(UsuarioModel $user): void
     {
         Session::regenerate();
         Session::set('user_id', $user->getId());

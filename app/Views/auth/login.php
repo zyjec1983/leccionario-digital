@@ -37,6 +37,14 @@
                             <p class="text-muted">Ingresa tus credenciales</p>
                         </div>
                         
+                        <?php if (isset($timeoutMessage) && $timeoutMessage): ?>
+                        <div class="alert alert-warning text-center mb-4">
+                            <i class="fas fa-clock me-2"></i>
+                            Tu sesión ha expirado por inactividad.<br>
+                            <small>Por favor ingresa nuevamente.</small>
+                        </div>
+                        <?php endif; ?>
+                        
                         <form id="loginForm">
                             <div class="mb-3">
                                 <label for="email" class="form-label">

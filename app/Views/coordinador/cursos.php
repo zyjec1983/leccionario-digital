@@ -19,28 +19,30 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
-                        <th>Nivel</th>
-                        <th>Sección</th>
+                        <th>Curso</th>
+                        <th>Abreviatura</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($cursos as $c): ?>
+                    <?php 
+                    $nombreCompleto = trim($c->getNombre() . ' ' . $c->getSeccion());
+                    $abreviatura = strtoupper($c->getNivel() . ($c->getSeccion() ? ' ' . $c->getSeccion() : ''));
+                    ?>
                     <tr>
-                        <td><?= htmlspecialchars($c->nombre) ?></td>
-                        <td><?= htmlspecialchars($c->nivel ?? '-') ?></td>
-                        <td><?= htmlspecialchars($c->seccion ?? '-') ?></td>
+                        <td><?= htmlspecialchars($nombreCompleto) ?></td>
+                        <td><?= htmlspecialchars($abreviatura) ?></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-editar" 
                                     data-bs-toggle="modal" data-bs-target="#modalCurso"
-                                    data-id="<?= $c->id ?>"
-                                    data-nombre="<?= htmlspecialchars($c->nombre, ENT_QUOTES, 'UTF-8') ?>"
-                                    data-nivel="<?= htmlspecialchars($c->nivel ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                    data-seccion="<?= htmlspecialchars($c->seccion ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                    data-id="<?= $c->getId() ?>"
+                                    data-nombre="<?= htmlspecialchars($c->getNombre(), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-nivel="<?= htmlspecialchars($c->getNivel(), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-seccion="<?= htmlspecialchars($c->getSeccion(), ENT_QUOTES, 'UTF-8') ?>">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $c->id ?>">
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $c->getId() ?>">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -67,24 +69,38 @@
                         <label for="nivel" class="form-label">Nivel *</label>
                         <select class="form-select" id="nivel" name="nivel" required>
                             <option value="">Seleccione un nivel</option>
-                            <option value="8vo">8vo - Octavo</option>
-                            <option value="9no">9no - Noveno</option>
-                            <option value="10mo">10mo - Décimo</option>
-                            <option value="1ro">1ro - Primero Bachillerato</option>
-                            <option value="2do">2do - Segundo Bachillerato</option>
-                            <option value="3ro">3ro - Tercero Bachillerato</option>
+                            <option value="1ro">1ro EGB</option>
+                            <option value="2do">2do EGB</option>
+                            <option value="3ro">3ro EGB</option>
+                            <option value="4to">4to EGB</option>
+                            <option value="5to">5to EGB</option>
+                            <option value="6to">6to EGB</option>
+                            <option value="7mo">7mo EGB</option>
+                            <option value="8vo">8vo EGB</option>
+                            <option value="9no">9no EGB</option>
+                            <option value="10mo">10mo EGB</option>
+                            <option value="1ro">1ro BGU</option>
+                            <option value="2do">2do BGU</option>
+                            <option value="3ro">3ro BGU</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del curso *</label>
                         <select class="form-select" id="nombre" name="nombre" required>
                             <option value="">Seleccione un curso</option>
-                            <option value="Octavo">Octavo</option>
-                            <option value="Noveno">Noveno</option>
-                            <option value="Décimo">Décimo</option>
-                            <option value="1ero Bachillerato">1ero Bachillerato</option>
-                            <option value="2do Bachillerato">2do Bachillerato</option>
-                            <option value="3ro Bachillerato">3ro Bachillerato</option>
+                            <option value="1RO EGB">1RO EGB</option>
+                            <option value="2DO EGB">2DO EGB</option>
+                            <option value="3RO EGB">3RO EGB</option>
+                            <option value="4TO EGB">4TO EGB</option>
+                            <option value="5TO EGB">5TO EGB</option>
+                            <option value="6TO EGB">6TO EGB</option>
+                            <option value="7MO EGB">7MO EGB</option>
+                            <option value="8VO EGB">8VO EGB</option>
+                            <option value="9NO EGB">9NO EGB</option>
+                            <option value="10MO EGB">10MO EGB</option>
+                            <option value="1RO BGU">1RO BGU</option>
+                            <option value="2DO BGU">2DO BGU</option>
+                            <option value="3RO BGU">3RO BGU</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -100,6 +116,12 @@
                             <option value="G">G</option>
                             <option value="H">H</option>
                         </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            El nombre del curso se mostrará como: <strong>"NOMBRE + SECCIÓN"</strong> (ej: "8VO EGB A")
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -177,18 +199,33 @@ $(document).ready(function() {
         
         Swal.fire({
             title: '¿Eliminar curso?',
-            text: 'Los horarios asociados también se verán afectados.',
+            html: 'Esta acción no se puede deshacer fácilmente.<br><br>' +
+                  '<div class="mb-3 text-start">' +
+                  '<label for="deleteReason" class="form-label">Motivo de eliminación:</label>' +
+                  '<textarea class="form-control" id="deleteReason" rows="2" ' +
+                  'placeholder="Ej: Curso cerrado, Fusión de cursos, etc."></textarea>' +
+                  '</div>',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            preConfirm: function() {
+                const reason = document.getElementById('deleteReason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('Por favor ingrese el motivo de eliminación');
+                    return false;
+                }
+                return reason;
+            }
         }).then((result) => {
             if (result.isConfirmed) {
+                const reason = result.value;
                 $.ajax({
                     url: '<?= route('coordinador/cursos/eliminar') ?>',
                     type: 'POST',
+                    contentType: 'application/json',
                     dataType: 'json',
-                    data: { id: id },
+                    data: JSON.stringify({ id: id, reason: reason }),
                     success: function(response) {
                         if (response.success) location.reload();
                         else Swal.fire({ icon: 'error', title: 'Error', text: response.message });

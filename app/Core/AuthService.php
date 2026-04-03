@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../Repositories/AuthRepository.php';
-require_once __DIR__ . '/../Models/AuthModel.php';
+require_once __DIR__ . '/../Models/UsuarioModel.php';
 
 class AuthService
 {
@@ -28,7 +28,7 @@ class AuthService
         return true;
     }
 
-    public function login(AuthModel $user): void
+    public function login(UsuarioModel $user): void
     {
         Session::regenerate();
         Session::set('user_id', $user->getId());
@@ -55,7 +55,7 @@ class AuthService
         return Session::isLoggedIn();
     }
 
-    public function user(): ?AuthModel
+    public function user(): ?UsuarioModel
     {
         if (!Session::isLoggedIn()) {
             return null;

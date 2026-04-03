@@ -2,7 +2,10 @@
     
     <footer class="mt-5 py-4 text-center text-muted border-top">
         <div class="container">
-            <small>&copy; <?= date('Y') ?> Leccionario Digital. Todos los derechos reservados.</small>
+            <small>&copy; <?= date('Y') ?> Leccionario Digital. Todos los derechos reservados.</small>            
+        </div>
+        <div class="container">
+            <small>Creado por: <strong>Christian Rodriguez</strong></small>
         </div>
     </footer>
 

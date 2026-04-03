@@ -1,11 +1,22 @@
 <?php
 
+require_once __DIR__ . '/../Services/UsuarioService.php';
+require_once __DIR__ . '/../Services/AsignaturaService.php';
+require_once __DIR__ . '/../Services/CursoService.php';
+
 class CoordinadorController extends Controller
 {
+    private UsuarioService $usuarioService;
+    private AsignaturaService $asignaturaService;
+    private CursoService $cursoService;
+
     public function __construct()
     {
         parent::__construct();
         $this->requireAuth('coordinador');
+        $this->usuarioService = new UsuarioService();
+        $this->asignaturaService = new AsignaturaService();
+        $this->cursoService = new CursoService();
     }
 
     public function index(): void
@@ -66,24 +77,82 @@ class CoordinadorController extends Controller
 
     public function usuarios(): void
     {
-        $usuarios = $this->db->fetchAll(
-            "SELECT u.*, GROUP_CONCAT(r.nombre) as roles
-             FROM usuarios u
-             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
-             INNER JOIN roles r ON ur.rol_id = r.id
-             WHERE u.activo = 1
-             GROUP BY u.id
-             ORDER BY u.nombre, u.apellido"
-        );
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
 
-        $roles = $this->db->fetchAll("SELECT * FROM roles");
-        $asignaturas = $this->db->fetchAll("SELECT * FROM asignaturas WHERE activo = 1");
+        $usuarios = $this->usuarioService->listarTodos();
+        $roles = $this->usuarioService->obtenerRolesDisponibles();
+        $asignaturas = $this->usuarioService->obtenerAsignaturasDisponibles();
+        $totalEliminados = $this->usuarioService->contarEliminados();
 
         $this->view('coordinador/usuarios', [
             'title' => 'Gestión de Usuarios',
             'usuarios' => $usuarios,
             'roles' => $roles,
-            'asignaturas' => $asignaturas
+            'asignaturas' => $asignaturas,
+            'totalEliminados' => $totalEliminados,
+            'mostrarEliminados' => false
+        ]);
+    }
+
+    public function usuariosEliminados(): void
+    {
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        $usuariosEliminados = $this->usuarioService->listarEliminados();
+
+        $this->view('coordinador/usuarios-eliminados', [
+            'title' => 'Usuarios Eliminados',
+            'usuariosEliminados' => $usuariosEliminados
+        ]);
+    }
+
+    public function buscarUsuarios(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $usuarios = $this->usuarioService->listarTodos();
+        } else {
+            $usuarios = $this->usuarioService->buscar($query);
+        }
+
+        $usuariosArray = array_map(fn($u) => $u->toArray(), $usuarios);
+        
+        $this->json([
+            'success' => true,
+            'usuarios' => $usuariosArray,
+            'total' => count($usuariosArray)
+        ]);
+    }
+
+    public function buscarUsuariosEliminados(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $usuarios = $this->usuarioService->listarEliminados();
+        } else {
+            $usuarios = $this->usuarioService->buscarEliminados($query);
+        }
+
+        $usuariosArray = array_map(fn($u) => $u->toArray(), $usuarios);
+        
+        $this->json([
+            'success' => true,
+            'usuarios' => $usuariosArray,
+            'total' => count($usuariosArray)
         ]);
     }
 
@@ -95,49 +164,41 @@ class CoordinadorController extends Controller
 
         $id = (int) $this->input('id');
         
-        $usuario = $this->db->fetch("SELECT id, nombre, apellido, email, telefono, firma FROM usuarios WHERE id = :id AND activo = 1", ['id' => $id]);
+        $resultado = $this->usuarioService->obtenerUsuarioConRelaciones($id);
         
-        if (!$usuario) {
+        if (!$resultado) {
             $this->json(['success' => false, 'message' => 'Usuario no encontrado']);
         }
 
-        $usuario->tiene_firma = !empty($usuario->firma);
-
-        $userRoles = $this->db->fetchAll(
-            "SELECT rol_id FROM usuario_roles WHERE usuario_id = :id",
-            ['id' => $id]
-        );
+        $usuario = $resultado['usuario'];
         
-        $userAsignaturas = $this->db->fetchAll(
-            "SELECT asignatura_id FROM asignaturas_docentes WHERE usuario_id = :id",
-            ['id' => $id]
-        );
-
         $this->json([
             'success' => true,
-            'usuario' => $usuario,
-            'roles' => array_map(fn($r) => $r->rol_id, $userRoles),
-            'asignaturas' => array_map(fn($a) => $a->asignatura_id, $userAsignaturas)
+            'usuario' => [
+                'id' => $usuario->getId(),
+                'nombre' => $usuario->getNombre(),
+                'apellido' => $usuario->getApellido(),
+                'email' => $usuario->getEmail(),
+                'telefono' => $usuario->getTelefono(),
+                'tiene_firma' => $usuario->hasFirma()
+            ],
+            'roles' => array_map(fn($r) => $r->id, $resultado['roles']),
+            'asignaturas' => array_map(fn($a) => $a->id, $resultado['asignaturas'])
         ]);
     }
 
     public function obtenerFirma(string $id): void
     {
-        try {
-            $usuario = $this->db->fetch("SELECT firma FROM usuarios WHERE id = :id AND activo = 1", ['id' => $id]);
-            
-            if (!$usuario || empty($usuario->firma)) {
-                http_response_code(404);
-                exit;
-            }
-
-            header('Content-Type: image/png');
-            echo $usuario->firma;
-            exit;
-        } catch (Exception $e) {
+        $firma = $this->usuarioService->getFirma((int)$id);
+        
+        if (!$firma) {
             http_response_code(404);
             exit;
         }
+
+        header('Content-Type: image/png');
+        echo $firma;
+        exit;
     }
 
     public function guardarUsuario(): void
@@ -154,123 +215,40 @@ class CoordinadorController extends Controller
         $password = $this->input('password');
         $roles = $this->input('roles', []);
         $asignaturas = $this->input('asignaturas', []);
-        $firmaExistente = $this->input('firma_existente', '0');
+        $firmaData = $this->input('firma_data');
 
-        if (empty($nombre) || empty($apellido) || empty($email)) {
-            $this->json(['success' => false, 'message' => 'Nombre, apellido y email son requeridos']);
-        }
+        $data = [
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'email' => $email,
+            'telefono' => $telefono,
+            'roles' => $roles,
+            'asignaturas' => $asignaturas,
+            'firma_data' => $firmaData
+        ];
 
-        $firmaData = null;
-        
-        if (isset($_FILES['firma']) && $_FILES['firma']['error'] === UPLOAD_ERR_OK) {
-            $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-            $maxSize = 2 * 1024 * 1024;
-            
-            if (!in_array($_FILES['firma']['type'], $allowedTypes)) {
-                $this->json(['success' => false, 'message' => 'La firma debe ser PNG, JPG o JPEG']);
-            }
-            
-            if ($_FILES['firma']['size'] > $maxSize) {
-                $this->json(['success' => false, 'message' => 'La firma no debe superar 2MB']);
-            }
-            
-            $firmaData = file_get_contents($_FILES['firma']['tmp_name']);
-        } elseif ($this->input('firma_data')) {
-            $firmaBase64 = $this->input('firma_data');
-            if (preg_match('/^data:image\/(\w+);base64,/', $firmaBase64, $matches)) {
-                $firmaData = base64_decode(substr($firmaBase64, strpos($firmaBase64, ',') + 1));
-            }
+        if (!empty($password)) {
+            $data['password'] = $password;
         }
 
         if ($id) {
-            $data = [
-                'nombre' => $nombre,
-                'apellido' => $apellido,
-                'email' => $email,
-                'telefono' => $telefono
-            ];
-
-            if (!empty($password)) {
-                $data['password'] = auth()->hashPassword($password);
-            }
-
-            if ($firmaData !== null) {
-                $data['firma'] = $firmaData;
-            }
-
-            $this->db->update('usuarios', $data, 'id = :id', ['id' => $id]);
-
-            $this->db->delete('usuario_roles', 'usuario_id = :user_id', ['user_id' => $id]);
-            foreach ($roles as $rolId) {
-                $this->db->insert('usuario_roles', ['usuario_id' => $id, 'rol_id' => $rolId]);
-            }
-
-            $this->db->delete('asignaturas_docentes', 'usuario_id = :user_id', ['user_id' => $id]);
-            foreach ($asignaturas as $asignaturaId) {
-                $this->db->insert('asignaturas_docentes', ['usuario_id' => $id, 'asignatura_id' => $asignaturaId]);
-            }
-
-            $this->json(['success' => true, 'message' => 'Usuario actualizado']);
-        } else {
-            if (empty($password)) {
-                $this->json(['success' => false, 'message' => 'La contraseña es requerida']);
-            }
+            $resultado = $this->usuarioService->actualizarUsuario((int)$id, $data);
             
-            $esDocente = false;
-            foreach ($roles as $rolId) {
-                if ((string)$rolId === '1' || (int)$rolId === 1) {
-                    $esDocente = true;
-                    break;
-                }
+            if ($resultado->isSuccess()) {
+                $this->json($resultado->toArray());
+            } else {
+                $this->json($resultado->toArray());
             }
-            if ($esDocente && empty($firmaData)) {
-                $this->json(['success' => false, 'message' => 'Los docentes deben tener una firma. Firme en el canvas.']);
+        } else {
+            $resultado = $this->usuarioService->crearUsuario($data);
+            
+            $response = $resultado->toArray();
+            
+            if ($response['success']) {
+                $this->json($response);
+            } else {
+                $this->json($response);
             }
-
-            $existente = $this->db->fetch("SELECT id FROM usuarios WHERE email = :email", ['email' => $email]);
-            if ($existente) {
-                $this->json(['success' => false, 'message' => 'El email ya está registrado']);
-            }
-
-            $data = [
-                'nombre' => $nombre,
-                'apellido' => $apellido,
-                'email' => $email,
-                'telefono' => $telefono,
-                'password' => auth()->hashPassword($password),
-                'activo' => 1
-            ];
-
-            if ($firmaData !== null) {
-                $data['firma'] = $firmaData;
-            }
-
-            $userId = $this->db->insert('usuarios', $data);
-
-            foreach ($roles as $rolId) {
-                $this->db->insert('usuario_roles', ['usuario_id' => $userId, 'rol_id' => $rolId]);
-            }
-
-            foreach ($asignaturas as $asignaturaId) {
-                $this->db->insert('asignaturas_docentes', ['usuario_id' => $userId, 'asignatura_id' => $asignaturaId]);
-            }
-
-            $roleNames = [];
-            foreach ($roles as $rolId) {
-                $rol = $this->db->fetch("SELECT nombre FROM roles WHERE id = :id", ['id' => $rolId]);
-                if ($rol) $roleNames[] = $rol->nombre;
-            }
-
-            $this->json([
-                'success' => true,
-                'message' => 'Usuario creado exitosamente',
-                'usuario' => [
-                    'nombre' => $nombre . ' ' . $apellido,
-                    'email' => $email,
-                    'password_temporal' => '12345',
-                    'rol' => implode(', ', $roleNames)
-                ]
-            ]);
         }
     }
 
@@ -280,24 +258,138 @@ class CoordinadorController extends Controller
             $this->redirect('coordinador/usuarios');
         }
 
-        $id = (int) $this->input('id');
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+        $reason = isset($jsonData['reason']) ? trim($jsonData['reason']) : 'Sin motivo especificado';
 
-        if ($id === Session::getUserId()) {
-            $this->json(['success' => false, 'message' => 'No puedes eliminarte a ti mismo']);
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID de usuario inválido']);
         }
 
-        $this->db->update('usuarios', ['activo' => 0], 'id = :id', ['id' => $id]);
+        if (empty($reason)) {
+            $this->json(['success' => false, 'message' => 'El motivo de eliminación es requerido']);
+        }
 
-        $this->json(['success' => true, 'message' => 'Usuario eliminado']);
+        $resultado = $this->usuarioService->softDeleteUsuario($id, $reason);
+        $this->json($resultado->toArray());
+    }
+
+    public function restaurarUsuario(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('coordinador/usuarios-eliminados');
+        }
+
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID de usuario inválido']);
+        }
+
+        $resultado = $this->usuarioService->restaurarUsuario($id);
+        $this->json($resultado->toArray());
+    }
+
+    public function resetearPassword(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('coordinador/usuarios');
+        }
+
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID de usuario inválido']);
+        }
+
+        $resultado = $this->usuarioService->resetearPassword($id);
+        $this->json($resultado->toArray());
     }
 
     public function cursos(): void
     {
-        $cursos = $this->db->fetchAll("SELECT * FROM cursos WHERE activo = 1 ORDER BY nivel, seccion");
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        $cursos = $this->cursoService->listarTodos();
+        $totalEliminados = $this->cursoService->contarEliminados();
 
         $this->view('coordinador/cursos', [
             'title' => 'Gestión de Cursos',
-            'cursos' => $cursos
+            'cursos' => $cursos,
+            'totalEliminados' => $totalEliminados
+        ]);
+    }
+
+    public function cursosEliminados(): void
+    {
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        $cursosEliminados = $this->cursoService->listarEliminados();
+
+        $this->view('coordinador/cursos-eliminados', [
+            'title' => 'Cursos Eliminados',
+            'cursosEliminados' => $cursosEliminados
+        ]);
+    }
+
+    public function obtenerCursos(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $cursos = $this->cursoService->listarTodos();
+        $cursosFormateados = array_map(fn($c) => $c->toArray(), $cursos);
+
+        $this->json(['success' => true, 'cursos' => $cursosFormateados]);
+    }
+
+    public function buscarCursos(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $cursos = $this->cursoService->listarTodos();
+        } else {
+            $cursos = $this->cursoService->buscar($query);
+        }
+
+        $this->json([
+            'success' => true,
+            'cursos' => array_map(fn($c) => $c->toArray(), $cursos)
+        ]);
+    }
+
+    public function buscarCursosEliminados(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $cursos = $this->cursoService->listarEliminados();
+        } else {
+            $cursos = $this->cursoService->buscarEliminados($query);
+        }
+
+        $this->json([
+            'success' => true,
+            'cursos' => array_map(fn($c) => $c->toArray(), $cursos)
         ]);
     }
 
@@ -308,32 +400,19 @@ class CoordinadorController extends Controller
         }
 
         $id = $this->input('id');
-        $nombre = $this->input('nombre');
-        $nivel = $this->input('nivel');
-        $seccion = $this->input('seccion');
-
-        if (empty($nombre)) {
-            $this->json(['success' => false, 'message' => 'El nombre es requerido']);
-        }
+        $data = [
+            'nombre' => $this->input('nombre'),
+            'nivel' => $this->input('nivel'),
+            'seccion' => $this->input('seccion')
+        ];
 
         if ($id) {
-            $this->db->update('cursos', [
-                'nombre' => $nombre,
-                'nivel' => $nivel,
-                'seccion' => $seccion
-            ], 'id = :id', ['id' => $id]);
-
-            $this->json(['success' => true, 'message' => 'Curso actualizado']);
+            $resultado = $this->cursoService->actualizarCurso((int)$id, $data);
         } else {
-            $this->db->insert('cursos', [
-                'nombre' => $nombre,
-                'nivel' => $nivel,
-                'seccion' => $seccion,
-                'activo' => 1
-            ]);
-
-            $this->json(['success' => true, 'message' => 'Curso creado']);
+            $resultado = $this->cursoService->crearCurso($data);
         }
+
+        $this->json($resultado->toArray());
     }
 
     public function eliminarCurso(): void
@@ -342,19 +421,105 @@ class CoordinadorController extends Controller
             $this->redirect('coordinador/cursos');
         }
 
-        $id = (int) $this->input('id');
-        $this->db->update('cursos', ['activo' => 0], 'id = :id', ['id' => $id]);
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+        $reason = isset($jsonData['reason']) ? trim($jsonData['reason']) : '';
 
-        $this->json(['success' => true, 'message' => 'Curso eliminado']);
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID inválido']);
+        }
+
+        $userId = Session::get('user_id');
+        $resultado = $this->cursoService->softDeleteCurso($id, $reason, $userId);
+        $this->json($resultado->toArray());
+    }
+
+    public function restaurarCurso(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('coordinador/cursos-eliminados');
+        }
+
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID inválido']);
+        }
+
+        $resultado = $this->cursoService->restaurarCurso($id);
+        $this->json($resultado->toArray());
     }
 
     public function asignaturas(): void
     {
-        $asignaturas = $this->db->fetchAll("SELECT * FROM asignaturas WHERE activo = 1 ORDER BY area, nombre");
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        $asignaturas = $this->asignaturaService->listarTodos();
+        $totalEliminados = $this->asignaturaService->contarEliminados();
 
         $this->view('coordinador/asignaturas', [
             'title' => 'Gestión de Asignaturas',
-            'asignaturas' => $asignaturas
+            'asignaturas' => $asignaturas,
+            'totalEliminados' => $totalEliminados
+        ]);
+    }
+
+    public function asignaturasEliminadas(): void
+    {
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        $asignaturasEliminadas = $this->asignaturaService->listarEliminados();
+
+        $this->view('coordinador/asignaturas-eliminadas', [
+            'title' => 'Asignaturas Eliminadas',
+            'asignaturasEliminadas' => $asignaturasEliminadas
+        ]);
+    }
+
+    public function buscarAsignaturas(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $asignaturas = $this->asignaturaService->listarTodos();
+        } else {
+            $asignaturas = $this->asignaturaService->buscar($query);
+        }
+
+        $this->json([
+            'success' => true,
+            'asignaturas' => array_map(fn($a) => $a->toArray(), $asignaturas)
+        ]);
+    }
+
+    public function buscarAsignaturasEliminadas(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $query = $this->input('q', '');
+        
+        if (empty($query)) {
+            $asignaturas = $this->asignaturaService->listarEliminados();
+        } else {
+            $asignaturas = $this->asignaturaService->buscarEliminados($query);
+        }
+
+        $this->json([
+            'success' => true,
+            'asignaturas' => array_map(fn($a) => $a->toArray(), $asignaturas)
         ]);
     }
 
@@ -365,40 +530,20 @@ class CoordinadorController extends Controller
         }
 
         $id = $this->input('id');
-        $codigo = $this->input('codigo');
-        $nombre = $this->input('nombre');
-        $area = $this->input('area');
-        $horas = $this->input('horas_semanales', 0);
-
-        if (empty($codigo) || empty($nombre)) {
-            $this->json(['success' => false, 'message' => 'Código y nombre son requeridos']);
-        }
+        $data = [
+            'codigo' => $this->input('codigo'),
+            'nombre' => $this->input('nombre'),
+            'area' => $this->input('area'),
+            'horas_semanales' => $this->input('horas_semanales', 0)
+        ];
 
         if ($id) {
-            $this->db->update('asignaturas', [
-                'codigo' => $codigo,
-                'nombre' => $nombre,
-                'area' => $area,
-                'horas_semanales' => $horas
-            ], 'id = :id', ['id' => $id]);
-
-            $this->json(['success' => true, 'message' => 'Asignatura actualizada']);
+            $resultado = $this->asignaturaService->actualizarAsignatura((int)$id, $data);
         } else {
-            $existente = $this->db->fetch("SELECT id FROM asignaturas WHERE codigo = :codigo", ['codigo' => $codigo]);
-            if ($existente) {
-                $this->json(['success' => false, 'message' => 'El código ya existe']);
-            }
-
-            $this->db->insert('asignaturas', [
-                'codigo' => $codigo,
-                'nombre' => $nombre,
-                'area' => $area,
-                'horas_semanales' => $horas,
-                'activo' => 1
-            ]);
-
-            $this->json(['success' => true, 'message' => 'Asignatura creada']);
+            $resultado = $this->asignaturaService->crearAsignatura($data);
         }
+
+        $this->json($resultado->toArray());
     }
 
     public function eliminarAsignatura(): void
@@ -407,10 +552,36 @@ class CoordinadorController extends Controller
             $this->redirect('coordinador/asignaturas');
         }
 
-        $id = (int) $this->input('id');
-        $this->db->update('asignaturas', ['activo' => 0], 'id = :id', ['id' => $id]);
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+        $reason = isset($jsonData['reason']) ? trim($jsonData['reason']) : '';
 
-        $this->json(['success' => true, 'message' => 'Asignatura eliminada']);
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID inválido']);
+        }
+
+        $userId = Session::get('user_id');
+        $resultado = $this->asignaturaService->softDeleteAsignatura($id, $reason, $userId);
+        $this->json($resultado->toArray());
+    }
+
+    public function restaurarAsignatura(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('coordinador/asignaturas-eliminadas');
+        }
+
+        $jsonInput = file_get_contents('php://input');
+        $jsonData = json_decode($jsonInput, true);
+        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
+
+        if ($id <= 0) {
+            $this->json(['success' => false, 'message' => 'ID inválido']);
+        }
+
+        $resultado = $this->asignaturaService->restaurarAsignatura($id);
+        $this->json($resultado->toArray());
     }
 
     public function configuracion(): void
@@ -628,14 +799,7 @@ class CoordinadorController extends Controller
 
         $firma = null;
         if ($leccionario->firmado) {
-            try {
-                $usuario = $this->db->fetch("SELECT firma FROM usuarios WHERE id = :id", ['id' => $leccionario->usuario_id]);
-                if ($usuario && !empty($usuario->firma)) {
-                    $firma = $usuario->firma;
-                }
-            } catch (Exception $e) {
-                // Columna firma no existe aun
-            }
+            $firma = $this->usuarioService->getFirma($leccionario->usuario_id);
         }
 
         $data = [
@@ -657,30 +821,5 @@ class CoordinadorController extends Controller
         $pdf = new PdfGenerator();
         $pdfContent = $pdf->generarLeccionario($data, $firma);
         $pdf->enviarRespuesta($pdfContent, 'leccionario_' . $leccionario->fecha . '_' . $leccionario->id . '.pdf');
-    }
-
-    public function resetearPassword(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('coordinador/usuarios');
-        }
-
-        $jsonInput = file_get_contents('php://input');
-        $jsonData = json_decode($jsonInput, true);
-        $id = isset($jsonData['id']) ? (int)$jsonData['id'] : 0;
-
-        if ($id <= 0) {
-            $this->json(['success' => false, 'message' => 'ID de usuario inválido']);
-        }
-
-        if ($id === Session::getUserId()) {
-            $this->json(['success' => false, 'message' => 'No puedes resetear tu propia contraseña']);
-        }
-
-        if (auth()->resetearPassword($id)) {
-            $this->json(['success' => true, 'message' => 'Contraseña reseteada. La nueva contraseña temporal es: 12345']);
-        } else {
-            $this->json(['success' => false, 'message' => 'Error al resetear la contraseña']);
-        }
     }
 }

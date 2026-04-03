@@ -29,21 +29,21 @@
                 <tbody>
                     <?php foreach ($asignaturas as $a): ?>
                     <tr>
-                        <td><span class="badge bg-secondary"><?= htmlspecialchars($a->codigo) ?></span></td>
-                        <td><?= htmlspecialchars($a->nombre) ?></td>
-                        <td><?= htmlspecialchars($a->area ?? '-') ?></td>
-                        <td><?= $a->horas_semanales ?: 0 ?></td>
+                        <td><span class="badge bg-secondary"><?= htmlspecialchars($a->getCodigo()) ?></span></td>
+                        <td><?= htmlspecialchars($a->getNombre()) ?></td>
+                        <td><?= htmlspecialchars($a->getArea() ?: '-') ?></td>
+                        <td><?= $a->getHorasSemanales() ?: 0 ?></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-editar" 
                                     data-bs-toggle="modal" data-bs-target="#modalAsignatura"
-                                    data-id="<?= $a->id ?>"
-                                    data-codigo="<?= htmlspecialchars($a->codigo, ENT_QUOTES, 'UTF-8') ?>"
-                                    data-nombre="<?= htmlspecialchars($a->nombre, ENT_QUOTES, 'UTF-8') ?>"
-                                    data-area="<?= htmlspecialchars($a->area ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                    data-horas="<?= $a->horas_semanales ?>">
+                                    data-id="<?= $a->getId() ?>"
+                                    data-codigo="<?= htmlspecialchars($a->getCodigo(), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-nombre="<?= htmlspecialchars($a->getNombre(), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-area="<?= htmlspecialchars($a->getArea() ?: '', ENT_QUOTES, 'UTF-8') ?>"
+                                    data-horas="<?= $a->getHorasSemanales() ?>">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $a->id ?>">
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="<?= $a->getId() ?>">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -163,18 +163,33 @@ $(document).ready(function() {
         
         Swal.fire({
             title: '¿Eliminar asignatura?',
-            text: 'Las asignaciones a docentes también se eliminarán.',
+            html: 'Esta acción no se puede deshacer fácilmente.<br><br>' +
+                  '<div class="mb-3 text-start">' +
+                  '<label for="deleteReason" class="form-label">Motivo de eliminación:</label>' +
+                  '<textarea class="form-control" id="deleteReason" rows="2" ' +
+                  'placeholder="Ej: Asignatura fusionada, Ya no se ofrece, etc."></textarea>' +
+                  '</div>',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            preConfirm: function() {
+                const reason = document.getElementById('deleteReason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('Por favor ingrese el motivo de eliminación');
+                    return false;
+                }
+                return reason;
+            }
         }).then((result) => {
             if (result.isConfirmed) {
+                const reason = result.value;
                 $.ajax({
                     url: '<?= route('coordinador/asignaturas/eliminar') ?>',
                     type: 'POST',
+                    contentType: 'application/json',
                     dataType: 'json',
-                    data: { id: id },
+                    data: JSON.stringify({ id: id, reason: reason }),
                     success: function(response) {
                         if (response.success) location.reload();
                         else Swal.fire({ icon: 'error', title: 'Error', text: response.message });
