@@ -88,11 +88,9 @@
                                 <label for="password" class="form-label">Contraseña <span id="passwordHint"></span></label>
                                 <input type="password" class="form-control" id="password" name="password">
                             </div>
-                            <div class="mb-3" id="firmaContainer" style="display: none;">
-                                <label for="firma" class="form-label">Firma (solo docentes)</label>
-                                <input type="file" class="form-control" id="firma" name="firma" accept="image/png, image/jpeg, image/jpg">
-                                <small class="text-muted">PNG, JPG o JPEG. Máx 500KB</small>
-                                <div id="firmaPreview" class="mt-2"></div>
+                            <div class="mb-3" id="firmaPreviewContainer" style="display: none;">
+                                <label class="form-label">Firma del docente:</label>
+                                <div id="firmaPreviewForm"></div>
                             </div>
                         </div>
                         <div class="col-12 col-md-4">
@@ -146,6 +144,39 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalFirma" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-signature me-2"></i>Firma del Docente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="signature-instructions">
+                    <i class="fas fa-hand-pointer me-1"></i>Firme con el dedo, mouse o stylus
+                </p>
+                <div class="signature-canvas-container">
+                    <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearSignaturePad()">
+                        <i class="fas fa-eraser me-1"></i>Limpiar
+                    </button>
+                </div>
+                <div class="firma-preview-container" id="firmaPreview"></div>
+                <input type="hidden" id="firma_hidden" name="firma_data">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmFirma()">
+                    <i class="fas fa-check me-1"></i>Confirmar Firma
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?= route('/assets/js/signature-pad.js') ?>"></script>
 <script>
 (function() {
     var modal = null;
@@ -184,21 +215,47 @@
             guardarUsuario();
         });
         
-        document.querySelectorAll('input[name="roles[]"]').forEach(function(cb) {
-            cb.addEventListener('change', toggleFirmaField);
-        });
+        var rolDocenteCheckbox = document.getElementById('rol_1');
+        if (rolDocenteCheckbox) {
+            rolDocenteCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    var firmaPreviewContainer = document.getElementById('firmaPreviewContainer');
+                    if (firmaPreviewContainer) firmaPreviewContainer.style.display = 'block';
+                    var modalFirma = document.getElementById('modalFirma');
+                    var firmaModalInstance = new bootstrap.Modal(modalFirma);
+                    firmaModalInstance.show();
+                }
+            });
+        }
         
-        toggleFirmaField();
+        document.querySelectorAll('input[name="roles[]"]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var rolDocente = document.getElementById('rol_1');
+                if (!rolDocente.checked) {
+                    var firmaPreviewContainer = document.getElementById('firmaPreviewContainer');
+                    var firmaPreviewForm = document.getElementById('firmaPreviewForm');
+                    if (firmaPreviewContainer) firmaPreviewContainer.style.display = 'none';
+                    if (firmaPreviewForm) firmaPreviewForm.innerHTML = '';
+                    clearAllFirma();
+                }
+            });
+        });
     });
     
     function toggleFirmaField() {
         var rolDocente = document.getElementById('rol_1');
-        var firmaContainer = document.getElementById('firmaContainer');
+        var firmaPreviewContainer = document.getElementById('firmaPreviewContainer');
+        var firmaPreviewForm = document.getElementById('firmaPreviewForm');
+        
         if (rolDocente && rolDocente.checked) {
-            firmaContainer.style.display = 'block';
+            firmaPreviewContainer.style.display = 'block';
+            var modalFirma = document.getElementById('modalFirma');
+            var firmaModalInstance = new bootstrap.Modal(modalFirma);
+            firmaModalInstance.show();
         } else {
-            firmaContainer.style.display = 'none';
-            document.getElementById('firma').value = '';
+            firmaPreviewContainer.style.display = 'none';
+            if (firmaPreviewForm) firmaPreviewForm.innerHTML = '';
+            clearAllFirma();
         }
     }
     
@@ -207,12 +264,15 @@
         document.getElementById('usuarioId').value = '';
         document.getElementById('firmaExistente').value = '0';
         document.getElementById('firmaPreview').innerHTML = '';
+        document.getElementById('firmaPreviewForm').innerHTML = '';
+        document.getElementById('firmaPreviewContainer').style.display = 'none';
+        document.getElementById('firma_hidden').value = '';
         document.getElementById('passwordHint').textContent = '(requerido)';
         document.getElementById('modalTitulo').textContent = 'Nuevo Usuario';
         document.getElementById('nombre').required = true;
         
+        clearAllFirma();
         deseleccionarTodos();
-        toggleFirmaField();
         modal.show();
     }
     
@@ -299,9 +359,9 @@
         formData.append('password', document.getElementById('password').value);
         formData.append('firma_existente', document.getElementById('firmaExistente').value);
         
-        var firmaInput = document.getElementById('firma');
-        if (firmaInput.files.length > 0) {
-            formData.append('firma', firmaInput.files[0]);
+        var firmaData = document.getElementById('firma_hidden').value;
+        if (firmaData) {
+            formData.append('firma_data', firmaData);
         }
         
         roles.forEach(function(r) { formData.append('roles[]', r); });
@@ -319,17 +379,37 @@
                     try {
                         var response = JSON.parse(xhr.responseText);
                         modal.hide();
+                        clearAllFirma();
                         setTimeout(function() {
                             if (response.success) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Éxito',
-                                    text: response.message,
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                }).then(function() {
-                                    location.reload();
-                                });
+                                if (response.usuario) {
+                                    var u = response.usuario;
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Usuario creado exitosamente',
+                                        html: '<div class="text-start">' +
+                                            '<p><strong>Nombre:</strong> ' + u.nombre + '</p>' +
+                                            '<p><strong>Email:</strong> ' + u.email + '</p>' +
+                                            '<p><strong>Contraseña temporal:</strong> <code style="background:#f8f9fa;padding:2px 8px;border-radius:4px;font-size:14px;">' + u.password_temporal + '</code></p>' +
+                                            '<p><strong>Rol:</strong> ' + u.rol + '</p>' +
+                                            '<hr>' +
+                                            '<p class="text-muted small mb-0"><i class="fas fa-exclamation-triangle me-1"></i>El usuario deberá cambiar su contraseña en el primer inicio de sesión.</p>' +
+                                            '</div>',
+                                        confirmButtonText: 'Cerrar'
+                                    }).then(function() {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Éxito',
+                                        text: response.message,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(function() {
+                                        location.reload();
+                                    });
+                                }
                             } else {
                                 Swal.fire({ icon: 'error', title: 'Error', text: response.message });
                             }

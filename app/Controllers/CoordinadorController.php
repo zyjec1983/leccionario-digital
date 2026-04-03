@@ -161,19 +161,25 @@ class CoordinadorController extends Controller
         }
 
         $firmaData = null;
+        
         if (isset($_FILES['firma']) && $_FILES['firma']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-            $maxSize = 500 * 1024;
+            $maxSize = 2 * 1024 * 1024;
             
             if (!in_array($_FILES['firma']['type'], $allowedTypes)) {
                 $this->json(['success' => false, 'message' => 'La firma debe ser PNG, JPG o JPEG']);
             }
             
             if ($_FILES['firma']['size'] > $maxSize) {
-                $this->json(['success' => false, 'message' => 'La firma no debe superar 500KB']);
+                $this->json(['success' => false, 'message' => 'La firma no debe superar 2MB']);
             }
             
             $firmaData = file_get_contents($_FILES['firma']['tmp_name']);
+        } elseif ($this->input('firma_data')) {
+            $firmaBase64 = $this->input('firma_data');
+            if (preg_match('/^data:image\/(\w+);base64,/', $firmaBase64, $matches)) {
+                $firmaData = base64_decode(substr($firmaBase64, strpos($firmaBase64, ',') + 1));
+            }
         }
 
         if ($id) {
@@ -209,6 +215,17 @@ class CoordinadorController extends Controller
             if (empty($password)) {
                 $this->json(['success' => false, 'message' => 'La contraseña es requerida']);
             }
+            
+            $esDocente = false;
+            foreach ($roles as $rolId) {
+                if ((string)$rolId === '1' || (int)$rolId === 1) {
+                    $esDocente = true;
+                    break;
+                }
+            }
+            if ($esDocente && empty($firmaData)) {
+                $this->json(['success' => false, 'message' => 'Los docentes deben tener una firma. Firme en el canvas.']);
+            }
 
             $existente = $this->db->fetch("SELECT id FROM usuarios WHERE email = :email", ['email' => $email]);
             if ($existente) {
@@ -238,7 +255,22 @@ class CoordinadorController extends Controller
                 $this->db->insert('asignaturas_docentes', ['usuario_id' => $userId, 'asignatura_id' => $asignaturaId]);
             }
 
-            $this->json(['success' => true, 'message' => 'Usuario creado']);
+            $roleNames = [];
+            foreach ($roles as $rolId) {
+                $rol = $this->db->fetch("SELECT nombre FROM roles WHERE id = :id", ['id' => $rolId]);
+                if ($rol) $roleNames[] = $rol->nombre;
+            }
+
+            $this->json([
+                'success' => true,
+                'message' => 'Usuario creado exitosamente',
+                'usuario' => [
+                    'nombre' => $nombre . ' ' . $apellido,
+                    'email' => $email,
+                    'password_temporal' => '12345',
+                    'rol' => implode(', ', $roleNames)
+                ]
+            ]);
         }
     }
 

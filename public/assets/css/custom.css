@@ -339,3 +339,82 @@ body {
         padding: 8px 12px;
     }
 }
+
+.signature-canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.signature-canvas {
+    border: 2px dashed #3498db;
+    border-radius: 8px;
+    background-color: #fafafa;
+    cursor: crosshair;
+    touch-action: none;
+    width: 100%;
+    height: 300px;
+}
+
+.signature-instructions {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.firma-tab-btn {
+    border: none;
+    background: #e9ecef;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    transition: all 0.3s;
+}
+
+.firma-tab-btn:hover {
+    background: #dee2e6;
+}
+
+.firma-tab-btn.active {
+    background: #3498db;
+    color: white;
+}
+
+.firma-tab-content {
+    display: none;
+}
+
+.firma-preview-container {
+    text-align: center;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-top: 10px;
+    background: #f8f9fa;
+}
+
+.firma-preview-container img {
+    max-height: 80px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.theme-slate .firma-tab-btn {
+    background: #424242;
+    color: #e5e7eb;
+}
+
+.theme-slate .firma-tab-btn:hover {
+    background: #4a4a4a;
+}
+
+.theme-slate .firma-tab-btn.active {
+    background: #2980b9;
+}
+
+.theme-slate .signature-canvas {
+    background-color: #2b2b2b;
+    border-color: #2980b9;
+}
