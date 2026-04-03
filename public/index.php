@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/app/Core/Security.php';
 require_once dirname(__DIR__) . '/app/Core/Session.php';
 Session::start();
 
-require_once dirname(__DIR__) . '/app/Core/Auth.php';
+require_once dirname(__DIR__) . '/app/Core/AuthService.php';
 require_once dirname(__DIR__) . '/app/Core/Controller.php';
 require_once dirname(__DIR__) . '/app/Core/Middleware.php';
 require_once dirname(__DIR__) . '/app/Core/Router.php';
@@ -52,11 +52,11 @@ function back(): void
     exit;
 }
 
-function auth(): Auth
+function auth(): AuthService
 {
     static $auth = null;
     if ($auth === null) {
-        $auth = new Auth();
+        $auth = new AuthService();
     }
     return $auth;
 }

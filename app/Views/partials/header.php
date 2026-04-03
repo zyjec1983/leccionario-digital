@@ -121,7 +121,7 @@
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i><?= $user->nombre ?>
+                            <i class="fas fa-user-circle me-1"></i><?= $user->getNombreCompleto() ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>

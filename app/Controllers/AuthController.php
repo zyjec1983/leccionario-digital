@@ -1,10 +1,16 @@
 <?php
 
+require_once __DIR__ . '/../Core/Result.php';
+require_once __DIR__ . '/../Repositories/AuthRepository.php';
+
 class AuthController extends Controller
 {
+    private AuthRepository $authRepo;
+
     public function __construct()
     {
         parent::__construct();
+        $this->authRepo = new AuthRepository();
     }
 
     public function login(): void
@@ -47,35 +53,38 @@ class AuthController extends Controller
             ], 400);
         }
 
-        if (Security::isLoginBlocked($clientIP, $email)) {
-            $remaining = Security::getLoginAttemptsRemaining($clientIP, $email);
-            Security::recordFailedLogin($clientIP, $email);
+        if ($this->authRepo->isLoginBlocked($clientIP, $email)) {
+            $remaining = $this->authRepo->getLoginAttemptsRemaining($clientIP, $email);
+            $this->authRepo->recordFailedLogin($clientIP, $email);
             $this->json([
                 'success' => false,
                 'message' => 'Demasiados intentos fallidos. Intenta de nuevo en 15 minutos.'
             ], 429);
         }
 
-        $auth = new Auth();
-        
-        $emailExiste = $auth->verificarEmail($email);
+        $emailExiste = $this->authRepo->emailExists($email);
+        $user = $this->authRepo->findByEmail($email);
 
-        if ($auth->attempt($email, $password)) {
-            Security::clearLoginAttempts($clientIP, $email);
-            
-            $roles = Session::get('user_roles', []);
-            
-            if (count($roles) > 1) {
+        if ($user && $this->authRepo->verifyPassword($password, $user->getPassword())) {
+            $this->authRepo->clearLoginAttempts($clientIP, $email);
+            $this->authRepo->updateLastLogin($user->getId());
+
+            $roles = $this->authRepo->getRoles($user->getId());
+            $user->setRoles($roles);
+
+            $this->setUserSession($user);
+
+            if ($user->tieneMultiplesRoles()) {
                 $this->json([
                     'success' => true,
                     'message' => 'Multirol detectado',
                     'redirect' => route('auth/select-role')
                 ]);
             } else {
-                $role = $roles[0]->slug ?? 'docente';
+                $role = $user->getPrimerRolSlug() ?? 'docente';
                 $redirect = $role === 'coordinador' ? 'coordinador' : 'docente';
-                
-                if ($role === 'docente' && $auth->isPrimerLogin()) {
+
+                if ($role === 'docente' && $user->isPrimerLogin()) {
                     $this->json([
                         'success' => true,
                         'message' => 'Login exitoso. Debe cambiar su contraseña',
@@ -90,23 +99,45 @@ class AuthController extends Controller
                 }
             }
         } else {
-            Security::recordFailedLogin($clientIP, $email);
-            $remaining = Security::getLoginAttemptsRemaining($clientIP, $email);
-            
+            $this->authRepo->recordFailedLogin($clientIP, $email);
+            $remaining = $this->authRepo->getLoginAttemptsRemaining($clientIP, $email);
+
             if (!$emailExiste) {
                 $msg = 'El email no está registrado en el sistema';
             } else {
                 $msg = 'Contraseña incorrecta';
             }
-            
+
             if ($remaining > 0 && $remaining <= 2) {
                 $msg .= " ($remaining intento(s) restante(s))";
             }
-            
+
             $this->json([
                 'success' => false,
                 'message' => $msg
             ], 401);
+        }
+    }
+
+    private function setUserSession(AuthModel $user): void
+    {
+        Session::regenerate();
+        Session::set('user_id', $user->getId());
+        Session::set('user_email', $user->getEmail());
+        Session::set('user_name', $user->getNombreCompleto());
+
+        $rolesData = [];
+        foreach ($user->getRoles() as $role) {
+            $rolesData[] = [
+                'id' => $role->id,
+                'nombre' => $role->nombre,
+                'slug' => $role->slug
+            ];
+        }
+        Session::set('user_roles', $rolesData);
+
+        if (count($rolesData) === 1) {
+            Session::set('current_role', $rolesData[0]['slug']);
         }
     }
 
@@ -117,9 +148,9 @@ class AuthController extends Controller
         }
 
         $roles = Session::get('user_roles', []);
-        
+
         if (count($roles) <= 1) {
-            $role = $roles[0]->slug ?? 'docente';
+            $role = $roles[0]['slug'] ?? 'docente';
             $redirect = $role === 'coordinador' ? 'coordinador' : 'docente';
             $this->redirect($redirect);
         }
@@ -134,7 +165,7 @@ class AuthController extends Controller
         }
 
         $role = $this->input('role');
-        
+
         if (empty($role)) {
             $this->json([
                 'success' => false,
@@ -142,28 +173,44 @@ class AuthController extends Controller
             ], 400);
         }
 
-        if (auth()->switchRole($role)) {
-            $redirect = $role === 'coordinador' ? 'coordinador' : 'docente';
-            
-            if ($role === 'docente' && auth()->isPrimerLogin()) {
-                $this->json([
-                    'success' => true,
-                    'message' => 'Rol seleccionado. Debe cambiar su contraseña',
-                    'redirect' => route('docente/cambiar-password')
-                ]);
-            } else {
-                $this->json([
-                    'success' => true,
-                    'message' => 'Rol seleccionado',
-                    'redirect' => route($redirect)
-                ]);
-            }
-        } else {
+        if (!$this->hasUserRole($role)) {
             $this->json([
                 'success' => false,
                 'message' => 'Rol no válido'
             ], 400);
         }
+
+        Session::set('current_role', $role);
+
+        if ($role === 'docente') {
+            $userId = Session::getUserId();
+            $user = $this->authRepo->findById($userId);
+            if ($user && $user->isPrimerLogin()) {
+                $this->json([
+                    'success' => true,
+                    'message' => 'Rol seleccionado. Debe cambiar su contraseña',
+                    'redirect' => route('docente/cambiar-password')
+                ]);
+            }
+        }
+
+        $redirect = $role === 'coordinador' ? 'coordinador' : 'docente';
+        $this->json([
+            'success' => true,
+            'message' => 'Rol seleccionado',
+            'redirect' => route($redirect)
+        ]);
+    }
+
+    private function hasUserRole(string $roleSlug): bool
+    {
+        $roles = Session::get('user_roles', []);
+        foreach ($roles as $role) {
+            if ($role['slug'] === $roleSlug) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function switchRole(string $role): void
@@ -172,17 +219,18 @@ class AuthController extends Controller
             $this->redirect('auth/login');
         }
 
-        if (!auth()->switchRole($role)) {
+        if (!$this->hasUserRole($role)) {
             $this->redirect('auth/unauthorized');
         }
 
+        Session::set('current_role', $role);
         $redirect = $role === 'coordinador' ? 'coordinador' : 'docente';
         $this->redirect($redirect);
     }
 
     public function logout(): void
     {
-        auth()->logout();
+        Session::destroy();
         $this->redirect('auth/login');
     }
 
@@ -198,37 +246,40 @@ class AuthController extends Controller
             $this->redirect('auth/login');
         }
 
-        $user = auth()->user();
-        $esPrimerLogin = auth()->isPrimerLogin();
-        
+        $userId = Session::getUserId();
+        $user = $this->authRepo->findById($userId);
+        $esPrimerLogin = $user ? $user->isPrimerLogin() : false;
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $passwordActual = $this->input('password_actual');
             $nuevaPassword = $this->input('nueva_password');
             $confirmarPassword = $this->input('confirmar_password');
-            
+
             if ($nuevaPassword !== $confirmarPassword) {
                 $this->json(['success' => false, 'message' => 'Las contraseñas no coinciden']);
             }
-            
+
             $erroresValidacion = Security::validarPassword($nuevaPassword);
             if (!empty($erroresValidacion)) {
                 $this->json(['success' => false, 'message' => implode('. ', $erroresValidacion)]);
             }
-            
-            if (!$esPrimerLogin && !auth()->verificarPasswordActual(Session::getUserId(), $passwordActual)) {
-                $this->json(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+
+            if (!$esPrimerLogin && !empty($passwordActual)) {
+                if (!$this->authRepo->verifyCurrentPassword($userId, $passwordActual)) {
+                    $this->json(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
+                }
             }
-            
-            if (auth()->cambiarPassword(Session::getUserId(), $nuevaPassword)) {
+
+            if ($this->authRepo->changePassword($userId, $nuevaPassword)) {
                 $this->json(['success' => true, 'message' => 'Contraseña actualizada correctamente']);
             } else {
                 $this->json(['success' => false, 'message' => 'Error al cambiar la contraseña']);
             }
         }
-        
+
         $currentUri = $_SERVER['REQUEST_URI'] ?? '';
         $esCoordinador = strpos($currentUri, 'coordinador') !== false;
-        
+
         $this->view('docente/cambiar-password', [
             'title' => 'Cambiar Contraseña',
             'esPrimerLogin' => $esPrimerLogin,
@@ -243,35 +294,30 @@ class AuthController extends Controller
             $this->redirect('auth/login');
         }
 
-        $user = auth()->user();
-        
         $passwordActual = isset($_POST['password_actual']) ? $_POST['password_actual'] : '';
         $nuevaPassword = isset($_POST['nueva_password']) ? $_POST['nueva_password'] : '';
         $confirmarPassword = isset($_POST['confirmar_password']) ? $_POST['confirmar_password'] : '';
-        
+
         if ($nuevaPassword !== $confirmarPassword) {
             $this->json(['success' => false, 'message' => 'Las contraseñas no coinciden']);
         }
-        
+
         $erroresValidacion = Security::validarPassword($nuevaPassword);
         if (!empty($erroresValidacion)) {
             $this->json(['success' => false, 'message' => implode('. ', $erroresValidacion)]);
         }
-        
-        $esPrimerLogin = false;
-        try {
-            $esPrimerLogin = auth()->isPrimerLogin();
-        } catch (Exception $e) {
-            $esPrimerLogin = false;
-        }
-        
+
+        $userId = Session::getUserId();
+        $user = $this->authRepo->findById($userId);
+        $esPrimerLogin = $user ? $user->isPrimerLogin() : false;
+
         if (!$esPrimerLogin && !empty($passwordActual)) {
-            if (!auth()->verificarPasswordActual(Session::getUserId(), $passwordActual)) {
+            if (!$this->authRepo->verifyCurrentPassword($userId, $passwordActual)) {
                 $this->json(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
             }
         }
-        
-        if (auth()->cambiarPassword(Session::getUserId(), $nuevaPassword)) {
+
+        if ($this->authRepo->changePassword($userId, $nuevaPassword)) {
             $currentRole = currentRole();
             $redirect = $currentRole === 'coordinador' ? 'coordinador' : 'docente';
             $this->json(['success' => true, 'message' => 'Contraseña actualizada correctamente', 'redirect' => route($redirect)]);
@@ -285,7 +331,7 @@ class AuthController extends Controller
         if (!isLoggedIn()) {
             $this->redirect('auth/login');
         }
-        
+
         Session::set('_created', time());
         echo json_encode(['success' => true]);
         exit;

@@ -1,6 +1,6 @@
 <div class="row mb-4">
     <div class="col">
-        <h1><i class="fas fa-chalkboard-teacher me-2"></i>Bienvenido, <?= $user->nombre ?></h1>
+        <h1><i class="fas fa-chalkboard-teacher me-2"></i>Bienvenido, <?= $user->getNombre() ?></h1>
         <p class="text-muted">Panel de docente - <?= date('d/m/Y') ?></p>
     </div>
 </div>
