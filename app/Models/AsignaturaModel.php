@@ -1,7 +1,14 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Models/AsignaturaModel.php
+ */
 
+/**
+ * AsignaturaModel - Represents a school subject
+ */
 class AsignaturaModel
 {
+    // ********** Properties **********
     private ?int $id = null;
     private string $codigo = '';
     private string $nombre = '';
@@ -13,6 +20,7 @@ class AsignaturaModel
     private ?int $deletedBy = null;
     private ?string $deletedByNombre = null;
 
+    // ********** Constructor **********
     public function __construct(?array $data = null)
     {
         if ($data) {
@@ -29,6 +37,7 @@ class AsignaturaModel
         }
     }
 
+    // ********** Getters & Setters **********
     public function getId(): ?int
     {
         return $this->id;
@@ -95,6 +104,7 @@ class AsignaturaModel
         return $this;
     }
 
+    // ********** Soft Delete Methods **********
     public function isDeleted(): bool
     {
         return $this->deletedAt !== null;
@@ -144,6 +154,7 @@ class AsignaturaModel
         return $this;
     }
 
+    // ********** Utility Methods **********
     public function toArray(): array
     {
         return [

@@ -1,10 +1,18 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Session.php
+ */
 
+/**
+ * Session class - Manages user sessions with inactivity timeout
+ */
 class Session
 {
+    // ********** Properties **********
     private static bool $started = false;
     private static int $inactivityTimeout = 900;
 
+    // ********** Session Lifecycle **********
     public static function start(): void
     {
         if (self::$started) {
@@ -38,6 +46,7 @@ class Session
         }
     }
 
+    // ********** Inactivity Timeout Methods **********
     private static function checkInactivityTimeout(): void
     {
         $lastActivity = $_SESSION['_last_activity'] ?? null;
@@ -61,6 +70,21 @@ class Session
         $_SESSION['_last_activity'] = time();
     }
 
+    public static function isTimedOut(): bool
+    {
+        if (!self::isLoggedIn()) {
+            return false;
+        }
+        
+        $lastActivity = $_SESSION['_last_activity'] ?? null;
+        if ($lastActivity === null) {
+            return false;
+        }
+        
+        return (time() - $lastActivity) > self::$inactivityTimeout;
+    }
+
+    // ********** Session Data Methods **********
     public static function has(string $key): bool
     {
         return isset($_SESSION[$key]);
@@ -91,6 +115,7 @@ class Session
         self::set("_flash_{$key}", $value);
     }
 
+    // ********** Session Management **********
     public static function destroy(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -104,6 +129,7 @@ class Session
         session_regenerate_id(true);
     }
 
+    // ********** User Session Methods **********
     public static function isLoggedIn(): bool
     {
         return isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null;
@@ -122,19 +148,5 @@ class Session
     public static function setCurrentRole(string $role): void
     {
         self::set('current_role', $role);
-    }
-    
-    public static function isTimedOut(): bool
-    {
-        if (!self::isLoggedIn()) {
-            return false;
-        }
-        
-        $lastActivity = $_SESSION['_last_activity'] ?? null;
-        if ($lastActivity === null) {
-            return false;
-        }
-        
-        return (time() - $lastActivity) > self::$inactivityTimeout;
     }
 }

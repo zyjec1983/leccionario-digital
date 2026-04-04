@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Repositories/UsuarioRepository.php */
 
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/UsuarioModel.php';
@@ -405,6 +406,18 @@ class UsuarioRepository
     {
         $result = $this->db->fetch(
             "SELECT COUNT(*) as total FROM usuarios WHERE deleted_at IS NOT NULL"
+        );
+        return $result ? (int) $result->total : 0;
+    }
+
+    public function countByRol(string $rolSlug): int
+    {
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM usuarios u
+             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
+             INNER JOIN roles r ON ur.rol_id = r.id
+             WHERE r.slug = :rol AND u.deleted_at IS NULL",
+            ['rol' => $rolSlug]
         );
         return $result ? (int) $result->total : 0;
     }

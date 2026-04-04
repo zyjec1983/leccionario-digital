@@ -1,3 +1,5 @@
+/* ********** Signature Pad JavaScript ********** */
+
 (function() {
     let signaturePad = null;
     let firmaDataUrl = null;

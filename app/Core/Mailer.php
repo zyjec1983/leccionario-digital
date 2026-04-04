@@ -1,13 +1,21 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Mailer.php
+ */
 
+/**
+ * Mailer class - Handles email sending
+ */
 class Mailer
 {
+    // ********** Properties **********
     protected array $to = [];
     protected string $subject = '';
     protected string $body = '';
     protected string $headers = '';
     protected bool $isHtml = true;
 
+    // ********** Constructor **********
     public function __construct()
     {
         $fromEmail = Config::get('smtp.from_email', 'noreply@localhost');
@@ -18,6 +26,7 @@ class Mailer
         $this->headers .= "Content-Type: text/html; charset=UTF-8\r\n";
     }
 
+    // ********** Email Builder Methods **********
     public function to(string $email, string $name = ''): self
     {
         $this->to[] = $name ? "{$name} <{$email}>" : $email;
@@ -52,6 +61,7 @@ class Mailer
         return mail($to, $this->subject, $this->body, $this->headers);
     }
 
+    // ********** Static Email Methods **********
     public static function sendReminder(int $userId, string $message): bool
     {
         $db = Database::getInstance();
@@ -78,7 +88,7 @@ class Mailer
                     <h1>Leccionario Digital</h1>
                 </div>
                 <div class='content'>
-                    <h2>¡Hola, {$user->nombre}!</h2>
+                    <h2>Hola, {$user->nombre}!</h2>
                     <p>{$message}</p>
                     <p>
                         <a href='" . Config::basePath() . "' class='btn'>Acceder al sistema</a>
@@ -133,7 +143,7 @@ class Mailer
                     <h1>Bienvenido/a</h1>
                 </div>
                 <div class='content'>
-                    <h2>¡Hola, {$user->nombre}!</h2>
+                    <h2>Hola, {$user->nombre}!</h2>
                     <p>Tu cuenta en <strong>Leccionario Digital</strong> ha sido creada exitosamente.</p>
                     <p>Ya puedes comenzar a registrar tus leccionarios de manera digital.</p>
                     <p>
@@ -163,6 +173,7 @@ class Mailer
         return $result;
     }
 
+    // ********** Utility Methods **********
     public function clear(): void
     {
         $this->to = [];

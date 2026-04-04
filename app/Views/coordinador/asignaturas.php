@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Asignaturas View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-book me-2"></i>Gestión de Asignaturas</h1>

@@ -1,11 +1,12 @@
     </main>
     
-    <footer class="mt-5 py-4 text-center text-muted border-top">
+    <!-- ********** Footer Partial ********** -->
+    <footer class="footer py-2 text-center text-muted border-top">
         <div class="container">
-            <small>&copy; <?= date('Y') ?> Leccionario Digital. Todos los derechos reservados.</small>            
-        </div>
-        <div class="container">
-            <small>Creado por: <strong>Christian Rodriguez</strong></small>
+            <small>
+                &copy; <?= date('Y') ?> Leccionario Digital. Todos los derechos reservados.
+                | Creado por: <strong>Christian Rodriguez</strong>
+            </small>
         </div>
     </footer>
 

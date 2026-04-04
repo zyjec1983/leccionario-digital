@@ -1,3 +1,4 @@
+<!-- ********** Docente Dashboard Index ********** -->
 <div class="row mb-4">
     <div class="col">
         <h1><i class="fas fa-chalkboard-teacher me-2"></i>Bienvenido, <?= $user->getNombre() ?></h1>
@@ -85,7 +86,7 @@
                     <?php foreach ($leccionesHoy as $leccion): ?>
                     <tr>
                         <td><?= substr($leccion['hora_inicio'] ?? '', 0, 5) ?> - <?= substr($leccion['hora_fin'] ?? '', 0, 5) ?></td>
-                        <td><?= htmlspecialchars($leccion['curso'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($leccion['curso_completo'] ?? $leccion['curso'] ?? '') ?></td>
                         <td><?= htmlspecialchars($leccion['asignatura'] ?? '') ?></td>
                         <td>
                             <?php if (($leccion['estado'] ?? '') === 'completado'): ?>

@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Reportes View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-chart-bar me-2"></i>Reportes</h1>

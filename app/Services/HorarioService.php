@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Services/HorarioService.php */
 
 require_once __DIR__ . '/../Core/Result.php';
 require_once __DIR__ . '/../Repositories/HorarioRepository.php';

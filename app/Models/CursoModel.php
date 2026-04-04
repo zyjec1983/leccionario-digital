@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Models/CursoModel.php */
 
 class CursoModel
 {

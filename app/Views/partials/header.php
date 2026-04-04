@@ -1,5 +1,6 @@
+<!-- ********** Header Partial ********** -->
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,12 +53,13 @@
         }
     </script>
 </head>
-<body>
+<body style="padding-bottom: 45px;">
     <?php if (isset($user) && $user): ?>
     <nav class="navbar navbar-expand-lg navbar-app sticky-top mb-4">
         <div class="container">
-            <a class="navbar-brand" href="<?= route() ?>">
-                <i class="fas fa-book-open me-2"></i>Leccionario Digital
+            <a class="navbar-brand d-flex align-items-center" href="<?= route() ?>">
+                <img src="<?= route('/img/LOGO-ECOMUNDO.png') ?>" alt="Logo Ecomundo" style="max-height: 35px; margin-right: 10px;">
+                <span>Leccionario Digital</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

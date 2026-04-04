@@ -1,3 +1,4 @@
+<!-- ********** Docente Horario View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-calendar-week me-2"></i>Mi Horario</h1>

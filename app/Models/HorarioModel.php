@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Models/HorarioModel.php */
 
 class HorarioModel
 {
@@ -22,8 +23,21 @@ class HorarioModel
 
     public function __construct()
     {
+        $this->id = null;
+        $this->usuarioId = 0;
+        $this->cursoId = 0;
+        $this->asignaturaId = 0;
+        $this->diaSemana = 1;
+        $this->horaInicio = '';
+        $this->horaFin = '';
+        $this->aula = null;
+        $this->periodo = date('Y') . '-1';
+        $this->activo = true;
+        $this->cursoNombre = null;
+        $this->seccion = null;
+        $this->asignaturaNombre = null;
+        $this->asignaturaCodigo = null;
         $this->nivelId = null;
-        $this->nivelNombre = null;
         $this->nivelNombre = null;
     }
 

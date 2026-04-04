@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/routes/web.php */
 
 function requireRoutes(Router $router): void
 {

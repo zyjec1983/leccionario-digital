@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Services/UsuarioService.php */
 
 require_once __DIR__ . '/../Core/Result.php';
 require_once __DIR__ . '/../Repositories/UsuarioRepository.php';
@@ -326,5 +327,15 @@ class UsuarioService
             return base64_decode(substr($firmaBase64, strpos($firmaBase64, ',') + 1));
         }
         return null;
+    }
+
+    public function contarDocentesActivos(): int
+    {
+        return $this->repo->countByRol('docente');
+    }
+
+    public function contarCoordinadoresActivos(): int
+    {
+        return $this->repo->countByRol('coordinador');
     }
 }

@@ -1,3 +1,5 @@
+<!-- ********** Login View ********** -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -32,7 +34,7 @@
                 <div class="card shadow-lg bg-white bg-opacity-75">
                     <div class="card-body p-5">
                         <div class="text-center mb-4">
-                            <i class="fas fa-book-open fa-3x text-primary mb-3"></i>
+                            <img src="<?= route('/img/LOGO-ECOMUNDO.png') ?>" alt="Logo Ecomundo" style="max-height: 80px; margin-bottom: 1rem;">
                             <h3 class="card-title">Leccionario Digital</h3>
                             <p class="text-muted">Ingresa tus credenciales</p>
                         </div>

@@ -1,3 +1,5 @@
+/* ********** App JavaScript ********** */
+
 const App = {
     currentTheme: 'litera',
 

@@ -1,10 +1,18 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Database.php
+ */
 
+/**
+ * Database class - Singleton pattern for PDO connection
+ */
 class Database
 {
+    // ********** Properties **********
     private static ?Database $instance = null;
     private PDO $connection;
 
+    // ********** Constructor **********
     private function __construct()
     {
         $config = Config::get('database');
@@ -33,10 +41,11 @@ class Database
             if (Config::get('app.debug')) {
                 die('Error de connexion: ' . $e->getMessage() . '<br>DSN: ' . $dsn);
             }
-            die('Error de conexión a la base de datos');
+            die('Error de conexion a la base de datos');
         }
     }
 
+    // ********** Singleton Pattern **********
     public static function getInstance(): Database
     {
         if (self::$instance === null) {
@@ -45,11 +54,13 @@ class Database
         return self::$instance;
     }
 
+    // ********** Connection Methods **********
     public function getConnection(): PDO
     {
         return $this->connection;
     }
 
+    // ********** Query Methods **********
     public function query(string $sql, array $params = []): PDOStatement
     {
         $stmt = $this->connection->prepare($sql);
@@ -70,6 +81,7 @@ class Database
         return $stmt->fetchAll();
     }
 
+    // ********** CRUD Methods **********
     public function insert(string $table, array $data): int
     {
         $columns = implode(', ', array_keys($data));
@@ -102,6 +114,7 @@ class Database
         return $stmt->rowCount();
     }
 
+    // ********** Transaction Methods **********
     public function beginTransaction(): bool
     {
         return $this->connection->beginTransaction();

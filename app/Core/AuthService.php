@@ -1,17 +1,26 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/AuthService.php
+ */
 
 require_once __DIR__ . '/../Repositories/AuthRepository.php';
 require_once __DIR__ . '/../Models/UsuarioModel.php';
 
+/**
+ * Service class for authentication operations
+ */
 class AuthService
 {
+    // ********** Properties **********
     private AuthRepository $repo;
 
+    // ********** Constructor **********
     public function __construct()
     {
         $this->repo = new AuthRepository();
     }
 
+    // ********** Authentication Methods **********
     public function attempt(string $email, string $password): bool
     {
         $user = $this->repo->findByEmail($email);
@@ -55,6 +64,7 @@ class AuthService
         return Session::isLoggedIn();
     }
 
+    // ********** User Methods **********
     public function user(): ?UsuarioModel
     {
         if (!Session::isLoggedIn()) {
@@ -64,6 +74,7 @@ class AuthService
         return $this->repo->findById(Session::getUserId());
     }
 
+    // ********** Role Methods **********
     public function hasRole(string $role): bool
     {
         $roles = Session::get('user_roles', []);
@@ -118,6 +129,7 @@ class AuthService
         return true;
     }
 
+    // ********** Password Methods **********
     public function hashPassword(string $password): string
     {
         return $this->repo->hashPassword($password);

@@ -1,3 +1,5 @@
+/* ********** Session Timeout JavaScript ********** */
+
 (function() {
     const SESSION_TIMEOUT = 15 * 60 * 1000;
     const WARNING_BEFORE = 60 * 1000;

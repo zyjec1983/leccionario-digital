@@ -1,10 +1,18 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Config.php
+ */
 
+/**
+ * Configuration manager class - handles application settings
+ */
 class Config
 {
+    // ********** Properties **********
     private static $config = [];
     private static $dbLoaded = false;
 
+    // ********** Load Methods **********
     public static function load(string $env = 'development'): void
     {
         $configFile = dirname(__DIR__, 2) . '/config/config.php';
@@ -32,10 +40,11 @@ class Config
             }
             self::$dbLoaded = true;
         } catch (Exception $e) {
-            // Si falla la conexión a BD, usar config.php
+            // Si falla la conexion a BD, usar config.php
         }
     }
 
+    // ********** Getter & Setter Methods **********
     public static function get(string $key, $default = null)
     {
         $keys = explode('.', $key);
@@ -68,6 +77,7 @@ class Config
         }
     }
 
+    // ********** Utility Methods **********
     public static function basePath(string $path = ''): string
     {
         $base = self::get('base_path', '/leccionario-digital/public');

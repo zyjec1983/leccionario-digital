@@ -1,7 +1,14 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Security.php
+ */
 
+/**
+ * Security class - Input sanitization and security utilities
+ */
 class Security
 {
+    // ********** Sanitization Methods **********
     public static function sanitizeInput(string $input): string
     {
         $input = trim($input);
@@ -38,6 +45,7 @@ class Security
         return null;
     }
 
+    // ********** IP Address Methods **********
     public static function getClientIP(): string
     {
         $ip = '';
@@ -51,6 +59,7 @@ class Security
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
 
+    // ********** Login Attempt Methods **********
     public static function isLoginBlocked(string $ip, string $email = null): bool
     {
         $db = Database::getInstance();
@@ -135,6 +144,7 @@ class Security
         }
     }
 
+    // ********** Lesson Blocking Methods **********
     public static function isLeccionarioBlocked(): bool
     {
         return self::isFechaBloqueada(date('Y-m-d'));
@@ -166,28 +176,29 @@ class Security
         return (int) Config::get('bloqueo_semanas_atras', 1);
     }
 
+    // ********** Password Validation Methods **********
     public static function validarPassword(string $password): array
     {
         $errores = [];
         
         if (strlen($password) < 5) {
-            $errores[] = 'La contraseña debe tener al menos 5 caracteres';
+            $errores[] = 'La contrasenia debe tener al menos 5 caracteres';
         }
         
         if (!preg_match('/[A-Z]/', $password)) {
-            $errores[] = 'La contraseña debe tener al menos 1 mayúscula (A-Z)';
+            $errores[] = 'La contrasenia debe tener al menos 1 mayuscula (A-Z)';
         }
         
         if (!preg_match('/[a-z]/', $password)) {
-            $errores[] = 'La contraseña debe tener al menos 1 minúscula (a-z)';
+            $errores[] = 'La contrasenia debe tener al menos 1 minuscula (a-z)';
         }
         
         if (!preg_match('/[0-9]/', $password)) {
-            $errores[] = 'La contraseña debe tener al menos 1 número (0-9)';
+            $errores[] = 'La contrasenia debe tener al menos 1 numero (0-9)';
         }
         
         if (!preg_match('/[!@#$%^&*()_+\-=]/', $password)) {
-            $errores[] = 'La contraseña debe tener al menos 1 carácter especial (!@#$%^&*()_+-=)';
+            $errores[] = 'La contrasenia debe tener al menos 1 caracter especial (!@#$%^&*()_+-=)';
         }
         
         return $errores;

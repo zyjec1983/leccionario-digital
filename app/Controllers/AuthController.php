@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Controllers/AuthController.php */
 
 require_once __DIR__ . '/../Core/Result.php';
 require_once __DIR__ . '/../Core/Session.php';

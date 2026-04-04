@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Models/LeccionarioModel.php */
 
 class LeccionarioModel
 {
@@ -16,6 +17,7 @@ class LeccionarioModel
     private ?string $horaFin;
     private ?string $aula;
     private ?string $cursoNombre;
+    private ?string $seccion;
     private ?string $asignaturaNombre;
     private ?string $asignaturaCodigo;
     private ?string $profesorNombre;
@@ -24,6 +26,25 @@ class LeccionarioModel
 
     public function __construct()
     {
+        $this->id = null;
+        $this->usuarioId = 0;
+        $this->horarioId = 0;
+        $this->fecha = '';
+        $this->contenido = '';
+        $this->observaciones = null;
+        $this->firmado = false;
+        $this->fechaRegistro = '';
+        $this->estado = 'pendiente';
+        $this->horaInicio = null;
+        $this->horaFin = null;
+        $this->aula = null;
+        $this->cursoNombre = null;
+        $this->seccion = null;
+        $this->asignaturaNombre = null;
+        $this->asignaturaCodigo = null;
+        $this->profesorNombre = null;
+        $this->profesorApellido = null;
+        $this->profesorEmail = null;
     }
 
     public function getId(): ?int
@@ -156,6 +177,26 @@ class LeccionarioModel
         $this->cursoNombre = $cursoNombre;
     }
 
+    public function getSeccion(): ?string
+    {
+        return $this->seccion;
+    }
+
+    public function setSeccion(?string $seccion): void
+    {
+        $this->seccion = $seccion;
+    }
+
+    public function getCursoCompleto(): string
+    {
+        $curso = $this->cursoNombre ?? '';
+        $seccion = $this->seccion ?? '';
+        if (!empty($seccion)) {
+            return trim($curso . ' ' . $seccion);
+        }
+        return $curso;
+    }
+
     public function getAsignaturaNombre(): ?string
     {
         return $this->asignaturaNombre;
@@ -247,6 +288,8 @@ class LeccionarioModel
             'hora_fin' => $this->horaFin,
             'aula' => $this->aula,
             'curso' => $this->cursoNombre,
+            'seccion' => $this->seccion,
+            'curso_completo' => $this->getCursoCompleto(),
             'asignatura' => $this->asignaturaNombre,
             'codigo' => $this->asignaturaCodigo,
             'profesor' => $this->getProfesorNombreCompleto(),
@@ -286,6 +329,9 @@ class LeccionarioModel
             $model->asignaturaNombre = $row->asignatura;
         } elseif (isset($row->asignatura_nombre)) {
             $model->asignaturaNombre = $row->asignatura_nombre;
+        }
+        if (isset($row->seccion)) {
+            $model->seccion = $row->seccion;
         }
         if (isset($row->codigo)) {
             $model->asignaturaCodigo = $row->codigo;

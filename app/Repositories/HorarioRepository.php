@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Repositories/HorarioRepository.php */
 
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/HorarioModel.php';
@@ -237,5 +238,15 @@ class HorarioRepository
             ]));
             return true;
         }
+    }
+
+    public function findDocentesActivos(): array
+    {
+        return $this->db->fetchAll(
+            "SELECT u.id, u.nombre, u.apellido FROM usuarios u
+             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
+             INNER JOIN roles r ON ur.rol_id = r.id
+             WHERE r.slug = 'docente' AND u.deleted_at IS NULL"
+        );
     }
 }

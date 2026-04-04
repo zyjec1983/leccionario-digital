@@ -1,3 +1,4 @@
+<!-- ********** Docente Leccionarios List ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-list-check me-2"></i>Mis Leccionarios</h1>
@@ -82,7 +83,7 @@
                             <?php endif; ?>
                         </td>
                         <td><?= substr($leccion['hora_inicio'] ?? '', 0, 5) ?></td>
-                        <td><?= htmlspecialchars($leccion['curso'] ?? '') ?></td>
+                        <td><?= htmlspecialchars($leccion['curso_completo'] ?? $leccion['curso'] ?? '') ?></td>
                         <td><?= htmlspecialchars($leccion['asignatura'] ?? '') ?></td>
                         <td>
                             <?php if (($leccion['estado'] ?? '') === 'completado'): ?>

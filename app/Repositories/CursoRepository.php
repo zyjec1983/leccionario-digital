@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Repositories/CursoRepository.php */
 
 require_once __DIR__ . '/../Core/Database.php';
 

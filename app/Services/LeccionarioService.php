@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Services/LeccionarioService.php */
 
 require_once __DIR__ . '/../Core/Result.php';
 require_once __DIR__ . '/../Repositories/LeccionarioRepository.php';
@@ -170,5 +171,35 @@ class LeccionarioService
     public function estaBloqueado(string $fecha): bool
     {
         return Security::isFechaBloqueada($fecha);
+    }
+
+    public function listarCoordinador(array $filtros): array
+    {
+        return $this->leccionarioRepo->findAllWithFilters($filtros);
+    }
+
+    public function obtenerDetalleCoordinador(int $id): ?LeccionarioModel
+    {
+        return $this->leccionarioRepo->findByIdWithDetails($id);
+    }
+
+    public function obtenerDocentes(): array
+    {
+        return $this->horarioRepo->findDocentesActivos();
+    }
+
+    public function obtenerDashboardStats(): array
+    {
+        return [
+            'lecciones_hoy' => $this->leccionarioRepo->countHoy(),
+            'pendientes' => $this->leccionarioRepo->countPendientesTotal(),
+            'atrasados' => $this->leccionarioRepo->countAtrasadosTotal(),
+            'recientes' => $this->leccionarioRepo->findRecientes(10)
+        ];
+    }
+
+    public function exportarDatos(array $filtros): array
+    {
+        return $this->leccionarioRepo->findForExport($filtros);
     }
 }

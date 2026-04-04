@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Cursos View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-graduation-cap me-2"></i>Gestión de Cursos</h1>
@@ -69,21 +70,22 @@
                         <label for="nivel" class="form-label">Nivel *</label>
                         <select class="form-select" id="nivel" name="nivel" required>
                             <option value="">Seleccione un nivel</option>
-                            <option value="1ro">1ro EGB</option>
-                            <option value="2do">2do EGB</option>
-                            <option value="3ro">3ro EGB</option>
-                            <option value="4to">4to EGB</option>
-                            <option value="5to">5to EGB</option>
-                            <option value="6to">6to EGB</option>
-                            <option value="7mo">7mo EGB</option>
-                            <option value="8vo">8vo EGB</option>
-                            <option value="9no">9no EGB</option>
-                            <option value="10mo">10mo EGB</option>
-                            <option value="1ro">1ro BGU</option>
-                            <option value="2do">2do BGU</option>
-                            <option value="3ro">3ro BGU</option>
+                            <option value="1ro">Primero</option>
+                            <option value="2do">Segundo</option>
+                            <option value="3ro">Tercero</option>
+                            <option value="4to">Cuarto</option>
+                            <option value="5to">Quinto</option>
+                            <option value="6to">Sexto</option>
+                            <option value="7mo">Séptimo</option>
+                            <option value="8vo">Octavo</option>
+                            <option value="9no">Noveno</option>
+                            <option value="10mo">Décimo</option>
+                            <option value="1ro">Primero de Bachillerato</option>
+                            <option value="2do">Segundo de Bachillerato</option>
+                            <option value="3ro">Tercero de Bachillerato</option>
                         </select>
                     </div>
+                    
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del curso *</label>
                         <select class="form-select" id="nombre" name="nombre" required>
@@ -103,6 +105,7 @@
                             <option value="3RO BGU">3RO BGU</option>
                         </select>
                     </div>
+                    
                     <div class="mb-3">
                         <label for="seccion" class="form-label">Sección *</label>
                         <select class="form-select" id="seccion" name="seccion" required>
@@ -111,10 +114,7 @@
                             <option value="B">B</option>
                             <option value="C">C</option>
                             <option value="D">D</option>
-                            <option value="E">E</option>
-                            <option value="F">F</option>
-                            <option value="G">G</option>
-                            <option value="H">H</option>
+                            <option value="E">E</option>                            
                         </select>
                     </div>
                     <div class="alert alert-info">

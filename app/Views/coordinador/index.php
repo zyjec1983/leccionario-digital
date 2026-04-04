@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Dashboard Index ********** -->
 <div class="row mb-4">
     <div class="col">
         <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
@@ -110,14 +111,14 @@
                         <tbody>
                             <?php foreach ($leccionesRecientes as $l): ?>
                             <tr>
-                                <td><?= date('d/m/Y', strtotime($l->fecha)) ?></td>
-                                <td><?= $l->nombre ?> <?= $l->apellido ?></td>
-                                <td><?= $l->curso ?></td>
-                                <td><?= $l->asignatura ?></td>
+                                <td><?= date('d/m/Y', strtotime($l->getFecha())) ?></td>
+                                <td><?= $l->getProfesorNombreCompleto() ?></td>
+                                <td><?= $l->getCursoCompleto() ?></td>
+                                <td><?= $l->getAsignaturaNombre() ?></td>
                                 <td>
-                                    <?php if ($l->estado === 'completado'): ?>
+                                    <?php if ($l->getEstado() === 'completado'): ?>
                                     <span class="badge bg-success">Completado</span>
-                                    <?php elseif ($l->estado === 'atrasado'): ?>
+                                    <?php elseif ($l->getEstado() === 'atrasado'): ?>
                                     <span class="badge bg-danger">Atrasado</span>
                                     <?php else: ?>
                                     <span class="badge bg-warning">Pendiente</span>

@@ -1,3 +1,4 @@
+<!-- ********** Docente Ver Leccionario View ********** -->
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
@@ -9,7 +10,7 @@
             <div class="card-body">
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <p><strong>Curso:</strong> <?= htmlspecialchars($leccionario['curso'] ?? '') ?></p>
+                        <p><strong>Curso:</strong> <?= htmlspecialchars($leccionario['curso_completo'] ?? $leccionario['curso'] ?? '') ?></p>
                         <p><strong>Asignatura:</strong> <?= htmlspecialchars(($leccionario['asignatura'] ?? '') . ' (' . ($leccionario['codigo'] ?? '') . ')') ?></p>
                     </div>
                     <div class="col-md-6">

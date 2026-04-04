@@ -1,3 +1,4 @@
+<!-- ********** Docente Nuevo Leccionario View ********** -->
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
@@ -10,7 +11,7 @@
                 <div class="alert alert-info mb-4">
                     <div class="row">
                         <div class="col-md-6">
-                            <strong>Curso:</strong> <?= htmlspecialchars($horario['curso'] ?? '') ?><br>
+                            <strong>Curso:</strong> <?= htmlspecialchars(trim(($horario['curso'] ?? '') . ' ' . ($horario['seccion'] ?? ''))) ?><br>
                             <strong>Asignatura:</strong> <?= htmlspecialchars(($horario['asignatura'] ?? '') . ' (' . ($horario['codigo'] ?? '') . ')') ?>
                         </div>
                         <div class="col-md-6">

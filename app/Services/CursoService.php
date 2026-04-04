@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Services/CursoService.php */
 
 require_once __DIR__ . '/../Models/CursoModel.php';
 require_once __DIR__ . '/../Repositories/CursoRepository.php';
@@ -104,5 +105,10 @@ class CursoService
         $this->repository->restore($id);
 
         return Result::success('Curso restaurado exitosamente');
+    }
+
+    public function contarActivos(): int
+    {
+        return $this->repository->countActive();
     }
 }

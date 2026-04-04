@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Services/AsignaturaService.php */
 
 require_once __DIR__ . '/../Models/AsignaturaModel.php';
 require_once __DIR__ . '/../Repositories/AsignaturaRepository.php';

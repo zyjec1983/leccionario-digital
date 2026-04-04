@@ -1,12 +1,20 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Result.php
+ */
 
+/**
+ * Result class - Standard response object for services
+ */
 class Result
 {
+    // ********** Properties **********
     private bool $success;
     private string $message;
     private $data;
     private array $errors;
 
+    // ********** Constructor **********
     public function __construct(bool $success, string $message, $data = null, array $errors = [])
     {
         $this->success = $success;
@@ -15,6 +23,7 @@ class Result
         $this->errors = $errors;
     }
 
+    // ********** Factory Methods **********
     public static function success(string $message, $data = null): self
     {
         return new self(true, $message, $data);
@@ -25,6 +34,7 @@ class Result
         return new self(false, $message, null, $errors);
     }
 
+    // ********** Getters **********
     public function isSuccess(): bool
     {
         return $this->success;
@@ -45,6 +55,7 @@ class Result
         return $this->errors;
     }
 
+    // ********** Converters **********
     public function toArray(): array
     {
         $result = [

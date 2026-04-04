@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Repositories/LeccionarioRepository.php */
 
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/LeccionarioModel.php';
@@ -16,7 +17,7 @@ class LeccionarioRepository
     {
         $row = $this->db->fetch(
             "SELECT l.*, h.hora_inicio, h.hora_fin, h.aula,
-                    c.nombre as curso, a.nombre as asignatura, a.codigo,
+                    c.nombre as curso, c.seccion, a.nombre as asignatura, a.codigo,
                     u.nombre, u.apellido, u.email
              FROM leccionarios l
              INNER JOIN horarios h ON l.horario_id = h.id
@@ -37,7 +38,7 @@ class LeccionarioRepository
     public function findByUsuarioAndFecha(int $usuarioId, string $fecha): array
     {
         $rows = $this->db->fetchAll(
-            "SELECT l.*, h.hora_inicio, h.hora_fin, c.nombre as curso, a.nombre as asignatura, a.codigo
+            "SELECT l.*, h.hora_inicio, h.hora_fin, c.nombre as curso, c.seccion, a.nombre as asignatura, a.codigo
              FROM leccionarios l
              INNER JOIN horarios h ON l.horario_id = h.id
              INNER JOIN cursos c ON h.curso_id = c.id
@@ -71,7 +72,7 @@ class LeccionarioRepository
         }
 
         $rows = $this->db->fetchAll(
-            "SELECT l.*, h.hora_inicio, c.nombre as curso, a.nombre as asignatura
+            "SELECT l.*, h.hora_inicio, c.nombre as curso, c.seccion, a.nombre as asignatura
              FROM leccionarios l
              INNER JOIN horarios h ON l.horario_id = h.id
              INNER JOIN cursos c ON h.curso_id = c.id
@@ -116,7 +117,7 @@ class LeccionarioRepository
     public function findPendientes(int $usuarioId): array
     {
         $rows = $this->db->fetchAll(
-            "SELECT l.*, h.hora_inicio, c.nombre as curso, a.nombre as asignatura
+            "SELECT l.*, h.hora_inicio, c.nombre as curso, c.seccion, a.nombre as asignatura
              FROM leccionarios l
              INNER JOIN horarios h ON l.horario_id = h.id
              INNER JOIN cursos c ON h.curso_id = c.id
@@ -182,7 +183,7 @@ class LeccionarioRepository
     {
         $row = $this->db->fetch(
             "SELECT l.*, h.hora_inicio, h.hora_fin, h.aula,
-                    c.nombre as curso, a.nombre as asignatura, a.codigo
+                    c.nombre as curso, c.seccion, a.nombre as asignatura, a.codigo
              FROM leccionarios l
              INNER JOIN horarios h ON l.horario_id = h.id
              INNER JOIN cursos c ON h.curso_id = c.id
@@ -226,5 +227,181 @@ class LeccionarioRepository
         );
 
         return $result ? (int) $result->total : 0;
+    }
+
+    public function findAllWithFilters(array $filters): array
+    {
+        $where = "1=1";
+        $params = [];
+
+        if (!empty($filters['fecha_inicio'])) {
+            $where .= " AND l.fecha >= :fecha_inicio";
+            $params['fecha_inicio'] = $filters['fecha_inicio'];
+        }
+
+        if (!empty($filters['fecha_fin'])) {
+            $where .= " AND l.fecha <= :fecha_fin";
+            $params['fecha_fin'] = $filters['fecha_fin'];
+        }
+
+        if (!empty($filters['profesor'])) {
+            $where .= " AND l.usuario_id = :profesor";
+            $params['profesor'] = $filters['profesor'];
+        }
+
+        if (!empty($filters['curso'])) {
+            $where .= " AND h.curso_id = :curso";
+            $params['curso'] = $filters['curso'];
+        }
+
+        if (!empty($filters['estado'])) {
+            $where .= " AND l.estado = :estado";
+            $params['estado'] = $filters['estado'];
+        }
+
+        $rows = $this->db->fetchAll(
+            "SELECT l.*, u.nombre, u.apellido, c.nombre as curso, c.seccion, a.nombre as asignatura
+             FROM leccionarios l
+             INNER JOIN usuarios u ON l.usuario_id = u.id
+             INNER JOIN horarios h ON l.horario_id = h.id
+             INNER JOIN cursos c ON h.curso_id = c.id
+             INNER JOIN asignaturas a ON h.asignatura_id = a.id
+             WHERE {$where}
+             ORDER BY l.fecha DESC, u.nombre",
+            $params
+        );
+
+        return array_map(fn($row) => LeccionarioModel::fromDatabase($row), $rows);
+    }
+
+    public function findByIdWithDetails(int $id): ?LeccionarioModel
+    {
+        $row = $this->db->fetch(
+            "SELECT l.*, u.nombre, u.apellido, u.email, c.nombre as curso, c.seccion,
+                    a.nombre as asignatura, h.hora_inicio, h.hora_fin, h.aula
+             FROM leccionarios l
+             INNER JOIN usuarios u ON l.usuario_id = u.id
+             INNER JOIN horarios h ON l.horario_id = h.id
+             INNER JOIN cursos c ON h.curso_id = c.id
+             INNER JOIN asignaturas a ON h.asignatura_id = a.id
+             WHERE l.id = :id",
+            ['id' => $id]
+        );
+
+        if (!$row) {
+            return null;
+        }
+
+        return LeccionarioModel::fromDatabase($row);
+    }
+
+    public function countAllWithFilters(array $filters): int
+    {
+        $where = "1=1";
+        $params = [];
+
+        if (!empty($filters['fecha_inicio'])) {
+            $where .= " AND l.fecha >= :fecha_inicio";
+            $params['fecha_inicio'] = $filters['fecha_inicio'];
+        }
+
+        if (!empty($filters['fecha_fin'])) {
+            $where .= " AND l.fecha <= :fecha_fin";
+            $params['fecha_fin'] = $filters['fecha_fin'];
+        }
+
+        if (!empty($filters['profesor'])) {
+            $where .= " AND l.usuario_id = :profesor";
+            $params['profesor'] = $filters['profesor'];
+        }
+
+        if (!empty($filters['curso'])) {
+            $where .= " AND h.curso_id = :curso";
+            $params['curso'] = $filters['curso'];
+        }
+
+        if (!empty($filters['estado'])) {
+            $where .= " AND l.estado = :estado";
+            $params['estado'] = $filters['estado'];
+        }
+
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM leccionarios l
+             INNER JOIN horarios h ON l.horario_id = h.id
+             WHERE {$where}",
+            $params
+        );
+
+        return $result ? (int) $result->total : 0;
+    }
+
+    public function countHoy(): int
+    {
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM leccionarios WHERE fecha = CURDATE()"
+        );
+        return $result ? (int) $result->total : 0;
+    }
+
+    public function countPendientesTotal(): int
+    {
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM leccionarios WHERE estado = 'pendiente'"
+        );
+        return $result ? (int) $result->total : 0;
+    }
+
+    public function countAtrasadosTotal(): int
+    {
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM leccionarios WHERE estado = 'pendiente' AND fecha < CURDATE()"
+        );
+        return $result ? (int) $result->total : 0;
+    }
+
+    public function findRecientes(int $limit = 10): array
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT l.*, u.nombre, u.apellido, c.nombre as curso, c.seccion, a.nombre as asignatura
+             FROM leccionarios l
+             INNER JOIN usuarios u ON l.usuario_id = u.id
+             INNER JOIN horarios h ON l.horario_id = h.id
+             INNER JOIN cursos c ON h.curso_id = c.id
+             INNER JOIN asignaturas a ON h.asignatura_id = a.id
+             ORDER BY l.fecha_registro DESC
+             LIMIT :limit",
+            ['limit' => $limit]
+        );
+
+        return array_map(fn($row) => LeccionarioModel::fromDatabase($row), $rows);
+    }
+
+    public function findForExport(array $filters): array
+    {
+        $where = "l.fecha BETWEEN :fecha_inicio AND :fecha_fin";
+        $params = [
+            'fecha_inicio' => $filters['fecha_inicio'],
+            'fecha_fin' => $filters['fecha_fin']
+        ];
+
+        if (!empty($filters['profesor'])) {
+            $where .= " AND l.usuario_id = :profesor_id";
+            $params['profesor_id'] = $filters['profesor'];
+        }
+
+        $rows = $this->db->fetchAll(
+            "SELECT l.fecha, u.nombre, u.apellido, c.nombre as curso, 
+                    a.nombre as asignatura, l.contenido, l.estado
+             FROM leccionarios l
+             INNER JOIN usuarios u ON l.usuario_id = u.id
+             INNER JOIN horarios h ON l.horario_id = h.id
+             INNER JOIN cursos c ON h.curso_id = c.id
+             INNER JOIN asignaturas a ON h.asignatura_id = a.id
+             WHERE {$where}
+             ORDER BY l.fecha DESC",
+            $params
+        );
+
+        return $rows;
     }
 }

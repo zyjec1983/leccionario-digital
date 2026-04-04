@@ -1,5 +1,13 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Middleware.php
+ */
 
+/**
+ * Middleware functions for authentication and session management
+ */
+
+// ********** Auth Middleware **********
 function requireAuth(string $role = null): void
 {
     if (!Session::isLoggedIn()) {
@@ -19,6 +27,7 @@ function requireAuth(string $role = null): void
     }
 }
 
+// ********** Login Middleware **********
 function requireLogin(): void
 {
     if (Session::isLoggedIn()) {

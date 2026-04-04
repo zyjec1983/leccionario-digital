@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Models/UsuarioModel.php */
 
 class UsuarioModel
 {
@@ -22,8 +23,23 @@ class UsuarioModel
 
     public function __construct()
     {
+        $this->id = null;
+        $this->nombre = '';
+        $this->apellido = '';
+        $this->email = '';
+        $this->telefono = null;
+        $this->password = '';
+        $this->firma = null;
+        $this->primerLogin = true;
+        $this->activo = true;
+        $this->ultimoLogin = null;
         $this->roles = [];
         $this->asignaturas = [];
+        $this->nivelCoordinacion = null;
+        $this->deletedAt = null;
+        $this->deletedReason = null;
+        $this->deletedBy = null;
+        $this->deletedByNombre = null;
     }
 
     public function getId(): ?int

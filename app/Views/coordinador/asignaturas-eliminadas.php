@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Asignaturas Eliminadas View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-book-slash me-2"></i>Asignaturas Eliminadas</h1>

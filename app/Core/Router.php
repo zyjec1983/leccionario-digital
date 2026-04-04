@@ -1,10 +1,18 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Router.php
+ */
 
+/**
+ * Router class - Handles URL routing
+ */
 class Router
 {
+    // ********** Properties **********
     protected array $routes = [];
     protected array $groupMiddlewares = [];
 
+    // ********** HTTP Method Routes **********
     public function get(string $uri, $handler): self
     {
         return $this->add('GET', $uri, $handler);
@@ -30,6 +38,7 @@ class Router
         return $this->add(['GET', 'POST', 'PUT', 'DELETE'], $uri, $handler);
     }
 
+    // ********** Route Registration **********
     protected function add(string|array $methods, string $uri, $handler): self
     {
         $methods = array_map('strtoupper', (array) $methods);
@@ -57,6 +66,7 @@ class Router
         return $this;
     }
 
+    // ********** Dispatch Methods **********
     public function dispatch(): void
     {
         $method = $_SERVER['REQUEST_METHOD'];
@@ -136,6 +146,7 @@ class Router
         $this->notFound();
     }
 
+    // ********** Error Handling **********
     protected function notFound(): void
     {
         http_response_code(404);
@@ -147,6 +158,7 @@ class Router
         exit;
     }
 
+    // ********** Utility Methods **********
     public function getRoutes(): array
     {
         return $this->routes;

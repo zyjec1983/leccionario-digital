@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Controllers/DocenteController.php */
 
 require_once __DIR__ . '/../Services/LeccionarioService.php';
 require_once __DIR__ . '/../Services/HorarioService.php';

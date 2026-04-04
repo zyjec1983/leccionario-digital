@@ -1,4 +1,5 @@
 <?php
+/** Location: leccionario-digital/app/Repositories/AuthRepository.php */
 
 require_once __DIR__ . '/../Core/Database.php';
 require_once __DIR__ . '/../Models/UsuarioModel.php';

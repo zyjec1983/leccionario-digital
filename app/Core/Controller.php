@@ -1,10 +1,18 @@
 <?php
+/**
+ * Location: leccionario-digital/app/Core/Controller.php
+ */
 
+/**
+ * Base controller class - provides common functionality for all controllers
+ */
 class Controller
 {
+    // ********** Properties **********
     protected Database $db;
     protected array $data = [];
 
+    // ********** Constructor **********
     public function __construct()
     {
         $this->db = Database::getInstance();
@@ -12,6 +20,7 @@ class Controller
         $this->data['current_role'] = auth()->getCurrentRole();
     }
 
+    // ********** View Methods **********
     protected function view(string $view, array $data = []): void
     {
         $data = array_merge($this->data, $data);
@@ -43,6 +52,7 @@ class Controller
         require_once $viewFile;
     }
 
+    // ********** Response Methods **********
     protected function json(array $data, int $statusCode = 200): void
     {
         http_response_code($statusCode);
@@ -51,7 +61,7 @@ class Controller
         exit;
     }
 
-    protected function success($message = 'Operación exitosa', $data = null): void
+    protected function success($message = 'Operacion exitosa', $data = null): void
     {
         $this->json([
             'success' => true,
@@ -68,6 +78,7 @@ class Controller
         ], $statusCode);
     }
 
+    // ********** Navigation Methods **********
     protected function redirect(string $uri): void
     {
         redirect($uri);
@@ -78,6 +89,7 @@ class Controller
         back();
     }
 
+    // ********** Input Methods **********
     protected function input(string $key, $default = null)
     {
         $request = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
@@ -149,6 +161,7 @@ class Controller
         return false;
     }
 
+    // ********** Validation Methods **********
     protected function validate(array $rules): bool|array
     {
         $errors = [];
@@ -193,7 +206,7 @@ class Controller
                 
             case 'email':
                 if ($value && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    return "El campo {$field} debe ser un email válido";
+                    return "El campo {$field} debe ser un email valido";
                 }
                 break;
                 
@@ -211,13 +224,13 @@ class Controller
                 
             case 'numeric':
                 if ($value && !is_numeric($value)) {
-                    return "El campo {$field} debe ser numérico";
+                    return "El campo {$field} debe ser numerico";
                 }
                 break;
                 
             case 'date':
                 if ($value && !strtotime($value)) {
-                    return "El campo {$field} debe ser una fecha válida";
+                    return "El campo {$field} debe ser una fecha valida";
                 }
                 break;
         }
@@ -225,6 +238,7 @@ class Controller
         return null;
     }
 
+    // ********** Auth Methods **********
     protected function requireAuth(string $role = null): void
     {
         if (!isLoggedIn()) {
@@ -236,6 +250,7 @@ class Controller
         }
     }
 
+    // ********** Config Methods **********
     protected function getConfig(string $key, $default = null)
     {
         return Config::get($key, $default);

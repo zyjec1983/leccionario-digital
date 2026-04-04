@@ -1,3 +1,4 @@
+<!-- ********** Coordinador Leccionarios View ********** -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1><i class="fas fa-clipboard-list me-2"></i>Revisar Leccionarios</h1>
@@ -76,26 +77,26 @@
                 <tbody>
                     <?php foreach ($leccionarios as $l): ?>
                     <tr>
-                        <td><?= date('d/m/Y', strtotime($l->fecha)) ?></td>
-                        <td><?= $l->nombre ?> <?= $l->apellido ?></td>
-                        <td><?= $l->curso ?></td>
-                        <td><?= $l->asignatura ?></td>
+                        <td><?= date('d/m/Y', strtotime($l->getFecha())) ?></td>
+                        <td><?= $l->getProfesorNombreCompleto() ?></td>
+                        <td><?= $l->getCursoCompleto() ?></td>
+                        <td><?= $l->getAsignaturaNombre() ?></td>
                         <td>
-                            <span title="<?= htmlspecialchars($l->contenido) ?>">
-                                <?= substr($l->contenido, 0, 50) ?><?= strlen($l->contenido) > 50 ? '...' : '' ?>
+                            <span title="<?= htmlspecialchars($l->getContenido()) ?>">
+                                <?= substr($l->getContenido(), 0, 50) ?><?= strlen($l->getContenido()) > 50 ? '...' : '' ?>
                             </span>
                         </td>
                         <td>
-                            <?php if ($l->estado === 'completado'): ?>
+                            <?php if ($l->getEstado() === 'completado'): ?>
                             <span class="badge bg-success">Completado</span>
-                            <?php elseif ($l->estado === 'atrasado'): ?>
+                            <?php elseif ($l->getEstado() === 'atrasado'): ?>
                             <span class="badge bg-danger">Atrasado</span>
                             <?php else: ?>
                             <span class="badge bg-warning">Pendiente</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <a href="<?= route('coordinador/leccionarios/ver/' . $l->id) ?>" 
+                            <a href="<?= route('coordinador/leccionarios/ver/' . $l->getId()) ?>" 
                                class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-eye"></i>
                             </a>

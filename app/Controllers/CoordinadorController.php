@@ -1,14 +1,19 @@
 <?php
+/** Location: leccionario-digital/app/Controllers/CoordinadorController.php */
 
 require_once __DIR__ . '/../Services/UsuarioService.php';
 require_once __DIR__ . '/../Services/AsignaturaService.php';
 require_once __DIR__ . '/../Services/CursoService.php';
+require_once __DIR__ . '/../Services/LeccionarioService.php';
+require_once __DIR__ . '/../Services/ConfiguracionService.php';
 
 class CoordinadorController extends Controller
 {
     private UsuarioService $usuarioService;
     private AsignaturaService $asignaturaService;
     private CursoService $cursoService;
+    private LeccionarioService $leccionarioService;
+    private ConfiguracionService $configuracionService;
 
     public function __construct()
     {
@@ -17,61 +22,27 @@ class CoordinadorController extends Controller
         $this->usuarioService = new UsuarioService();
         $this->asignaturaService = new AsignaturaService();
         $this->cursoService = new CursoService();
+        $this->leccionarioService = new LeccionarioService();
+        $this->configuracionService = new ConfiguracionService();
     }
 
     public function index(): void
     {
-        $totalProfesores = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM usuarios u
-             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
-             INNER JOIN roles r ON ur.rol_id = r.id
-             WHERE r.slug = 'docente' AND u.activo = 1"
-        );
-
-        $leccionesHoy = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM leccionarios WHERE fecha = CURDATE()"
-        );
-
-        $esperadosHoy = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM horarios
-             WHERE dia_semana = DAYOFWEEK(CURDATE()) - 1 AND activo = 1"
-        );
-
-        $pendientes = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM leccionarios WHERE estado = 'pendiente'"
-        );
-
-        $atrasados = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM leccionarios 
-             WHERE estado = 'pendiente' AND fecha < CURDATE()"
-        );
-
-        $totalCursos = $this->db->fetch(
-            "SELECT COUNT(*) as total FROM cursos WHERE activo = 1"
-        );
-
-        $leccionesRecientes = $this->db->fetchAll(
-            "SELECT l.*, u.nombre, u.apellido, c.nombre as curso, a.nombre as asignatura
-             FROM leccionarios l
-             INNER JOIN usuarios u ON l.usuario_id = u.id
-             INNER JOIN horarios h ON l.horario_id = h.id
-             INNER JOIN cursos c ON h.curso_id = c.id
-             INNER JOIN asignaturas a ON h.asignatura_id = a.id
-             ORDER BY l.fecha_registro DESC
-             LIMIT 10"
-        );
+        $stats = $this->leccionarioService->obtenerDashboardStats();
+        $totalProfesores = $this->usuarioService->contarDocentesActivos();
+        $totalCursos = $this->cursoService->contarActivos();
 
         $this->view('coordinador/index', [
             'title' => 'Dashboard',
             'stats' => [
-                'profesores' => $totalProfesores->total ?? 0,
-                'leccionesHoy' => $leccionesHoy->total ?? 0,
-                'esperadosHoy' => $esperadosHoy->total ?? 0,
-                'pendientes' => $pendientes->total ?? 0,
-                'atrasados' => $atrasados->total ?? 0,
-                'cursos' => $totalCursos->total ?? 0
+                'profesores' => $totalProfesores,
+                'leccionesHoy' => $stats['lecciones_hoy'],
+                'esperadosHoy' => $stats['esperados'] ?? 0,
+                'pendientes' => $stats['pendientes'],
+                'atrasados' => $stats['atrasados'],
+                'cursos' => $totalCursos
             ],
-            'leccionesRecientes' => $leccionesRecientes
+            'leccionesRecientes' => $stats['recientes']
         ]);
     }
 
@@ -597,25 +568,16 @@ class CoordinadorController extends Controller
             $this->redirect('coordinador/configuracion');
         }
 
-        $habilitarHorarios = (int) $this->input('habilitar_horarios', 0);
-        $fechaExpiracion = $this->input('fecha_expiracion');
-        $bloqueoSemanas = (int) $this->input('bloqueo_semanas_atras', 1);
-        $loginMaxIntentos = (int) $this->input('login_max_intentos', 5);
-        $loginBloqueoMinutos = (int) $this->input('login_bloqueo_minutos', 15);
+        $data = [
+            'habilitar_horarios' => $this->input('habilitar_horarios', 0),
+            'fecha_expiracion' => $this->input('fecha_expiracion'),
+            'bloqueo_semanas_atras' => $this->input('bloqueo_semanas_atras', 1),
+            'login_max_intentos' => $this->input('login_max_intentos', 5),
+            'login_bloqueo_minutos' => $this->input('login_bloqueo_minutos', 15)
+        ];
 
-        $this->db->update('configuraciones', ['valor' => $habilitarHorarios], 'clave = :clave', ['clave' => 'habilitar_edicion_horarios']);
-        $this->db->update('configuraciones', ['valor' => $fechaExpiracion ?: null], 'clave = :clave', ['clave' => 'horarios_fecha_expiracion']);
-        $this->db->update('configuraciones', ['valor' => $bloqueoSemanas], 'clave = :clave', ['clave' => 'bloqueo_semanas_atras']);
-        $this->db->update('configuraciones', ['valor' => $loginMaxIntentos], 'clave = :clave', ['clave' => 'login_max_intentos']);
-        $this->db->update('configuraciones', ['valor' => $loginBloqueoMinutos], 'clave = :clave', ['clave' => 'login_bloqueo_minutos']);
-
-        Config::set('habilitar_edicion_horarios', $habilitarHorarios);
-        Config::set('horarios_fecha_expiracion', $fechaExpiracion);
-        Config::set('bloqueo_semanas_atras', $bloqueoSemanas);
-        Config::set('login_max_intentos', $loginMaxIntentos);
-        Config::set('login_bloqueo_minutos', $loginBloqueoMinutos);
-
-        $this->json(['success' => true, 'message' => 'Configuración guardada correctamente']);
+        $resultado = $this->configuracionService->guardar($data);
+        $this->json($resultado->toArray());
     }
 
     public function leccionarios(): void
@@ -628,54 +590,9 @@ class CoordinadorController extends Controller
             'estado' => $this->input('estado')
         ];
 
-        $where = "1=1";
-        $params = [];
-
-        if ($filtros['fecha_inicio']) {
-            $where .= " AND l.fecha >= :fecha_inicio";
-            $params['fecha_inicio'] = $filtros['fecha_inicio'];
-        }
-
-        if ($filtros['fecha_fin']) {
-            $where .= " AND l.fecha <= :fecha_fin";
-            $params['fecha_fin'] = $filtros['fecha_fin'];
-        }
-
-        if ($filtros['profesor']) {
-            $where .= " AND l.usuario_id = :profesor";
-            $params['profesor'] = $filtros['profesor'];
-        }
-
-        if ($filtros['curso']) {
-            $where .= " AND h.curso_id = :curso";
-            $params['curso'] = $filtros['curso'];
-        }
-
-        if ($filtros['estado']) {
-            $where .= " AND l.estado = :estado";
-            $params['estado'] = $filtros['estado'];
-        }
-
-        $leccionarios = $this->db->fetchAll(
-            "SELECT l.*, u.nombre, u.apellido, c.nombre as curso, a.nombre as asignatura
-             FROM leccionarios l
-             INNER JOIN usuarios u ON l.usuario_id = u.id
-             INNER JOIN horarios h ON l.horario_id = h.id
-             INNER JOIN cursos c ON h.curso_id = c.id
-             INNER JOIN asignaturas a ON h.asignatura_id = a.id
-             WHERE {$where}
-             ORDER BY l.fecha DESC, u.nombre",
-            $params
-        );
-
-        $profesores = $this->db->fetchAll(
-            "SELECT u.id, u.nombre, u.apellido FROM usuarios u
-             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
-             INNER JOIN roles r ON ur.rol_id = r.id
-             WHERE r.slug = 'docente' AND u.activo = 1"
-        );
-
-        $cursos = $this->db->fetchAll("SELECT * FROM cursos WHERE activo = 1");
+        $leccionarios = $this->leccionarioService->listarCoordinador($filtros);
+        $profesores = $this->leccionarioService->obtenerDocentes();
+        $cursos = $this->cursoService->listarTodos();
 
         $this->view('coordinador/leccionarios', [
             'title' => 'Revisar Leccionarios',
@@ -688,17 +605,7 @@ class CoordinadorController extends Controller
 
     public function verLeccionario(string $id): void
     {
-        $leccionario = $this->db->fetch(
-            "SELECT l.*, u.nombre, u.apellido, u.email, c.nombre as curso, 
-                    a.nombre as asignatura, h.hora_inicio, h.hora_fin, h.aula
-             FROM leccionarios l
-             INNER JOIN usuarios u ON l.usuario_id = u.id
-             INNER JOIN horarios h ON l.horario_id = h.id
-             INNER JOIN cursos c ON h.curso_id = c.id
-             INNER JOIN asignaturas a ON h.asignatura_id = a.id
-             WHERE l.id = :id",
-            ['id' => $id]
-        );
+        $leccionario = $this->leccionarioService->obtenerDetalleCoordinador((int)$id);
 
         if (!$leccionario) {
             $this->redirect('coordinador/leccionarios');
@@ -712,12 +619,7 @@ class CoordinadorController extends Controller
 
     public function reportes(): void
     {
-        $profesores = $this->db->fetchAll(
-            "SELECT u.id, u.nombre, u.apellido FROM usuarios u
-             INNER JOIN usuario_roles ur ON u.id = ur.usuario_id
-             INNER JOIN roles r ON ur.rol_id = r.id
-             WHERE r.slug = 'docente' AND u.activo = 1"
-        );
+        $profesores = $this->leccionarioService->obtenerDocentes();
 
         $this->view('coordinador/reportes', [
             'title' => 'Reportes',
@@ -727,33 +629,13 @@ class CoordinadorController extends Controller
 
     public function exportarReporte(): void
     {
-        $fechaInicio = $this->input('fecha_inicio', date('Y-m-01'));
-        $fechaFin = $this->input('fecha_fin', date('Y-m-d'));
-        $profesorId = $this->input('profesor_id');
-
-        $where = "l.fecha BETWEEN :fecha_inicio AND :fecha_fin";
-        $params = [
-            'fecha_inicio' => $fechaInicio,
-            'fecha_fin' => $fechaFin
+        $filtros = [
+            'fecha_inicio' => $this->input('fecha_inicio', date('Y-m-01')),
+            'fecha_fin' => $this->input('fecha_fin', date('Y-m-d')),
+            'profesor' => $this->input('profesor_id')
         ];
 
-        if ($profesorId) {
-            $where .= " AND l.usuario_id = :profesor_id";
-            $params['profesor_id'] = $profesorId;
-        }
-
-        $leccionarios = $this->db->fetchAll(
-            "SELECT l.fecha, u.nombre, u.apellido, c.nombre as curso, 
-                    a.nombre as asignatura, l.contenido, l.estado
-             FROM leccionarios l
-             INNER JOIN usuarios u ON l.usuario_id = u.id
-             INNER JOIN horarios h ON l.horario_id = h.id
-             INNER JOIN cursos c ON h.curso_id = c.id
-             INNER JOIN asignaturas a ON h.asignatura_id = a.id
-             WHERE {$where}
-             ORDER BY l.fecha DESC",
-            $params
-        );
+        $leccionarios = $this->leccionarioService->exportarDatos($filtros);
 
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=leccionarios_' . date('Ymd') . '.csv');
@@ -781,45 +663,49 @@ class CoordinadorController extends Controller
     {
         require_once dirname(__DIR__) . '/Core/PdfGenerator.php';
         
-        $leccionario = $this->db->fetch(
-            "SELECT l.*, u.nombre as nombre_profesor, u.apellido as apellido_profesor, u.email,
-                    c.nombre as curso, a.nombre as asignatura, h.hora_inicio, h.hora_fin
-             FROM leccionarios l
-             INNER JOIN usuarios u ON l.usuario_id = u.id
-             INNER JOIN horarios h ON l.horario_id = h.id
-             INNER JOIN cursos c ON h.curso_id = c.id
-             INNER JOIN asignaturas a ON h.asignatura_id = a.id
-             WHERE l.id = :id",
-            ['id' => $id]
-        );
+        $leccionario = $this->leccionarioService->obtenerDetalleCoordinador((int)$id);
 
         if (!$leccionario) {
             $this->redirect('coordinador/leccionarios');
         }
 
         $firma = null;
-        if ($leccionario->firmado) {
-            $firma = $this->usuarioService->getFirma($leccionario->usuario_id);
+        if ($leccionario->isFirmado()) {
+            $firma = $this->usuarioService->getFirma($leccionario->getUsuarioId());
+        }
+
+        $firmaRevisor = null;
+        $nombreRevisor = null;
+        $revisorId = Session::getUserId();
+        $revisorFirma = $this->usuarioService->getFirma($revisorId);
+        if ($revisorFirma) {
+            $firmaRevisor = $revisorFirma;
+        }
+        
+        $revisor = $this->usuarioService->obtenerUsuario($revisorId);
+        if ($revisor) {
+            $nombreRevisor = $revisor->getNombreCompleto();
         }
 
         $data = [
-            'id' => $leccionario->id,
-            'profesor' => $leccionario->nombre_profesor . ' ' . $leccionario->apellido_profesor,
-            'email' => $leccionario->email,
-            'curso' => $leccionario->curso,
-            'asignatura' => $leccionario->asignatura,
-            'fecha' => $leccionario->fecha,
-            'hora_inicio' => $leccionario->hora_inicio,
-            'hora_fin' => $leccionario->hora_fin,
-            'contenido' => $leccionario->contenido,
-            'observaciones' => $leccionario->observaciones,
-            'estado' => $leccionario->estado,
-            'firmado' => $leccionario->firmado,
-            'fecha_registro' => $leccionario->fecha_registro
+            'id' => $leccionario->getId(),
+            'profesor' => $leccionario->getProfesorNombreCompleto(),
+            'email' => $leccionario->getProfesorEmail(),
+            'curso' => $leccionario->getCursoNombre(),
+            'seccion' => $leccionario->getSeccion(),
+            'asignatura' => $leccionario->getAsignaturaNombre(),
+            'fecha' => $leccionario->getFecha(),
+            'hora_inicio' => $leccionario->getHoraInicio(),
+            'hora_fin' => $leccionario->getHoraFin(),
+            'contenido' => $leccionario->getContenido(),
+            'observaciones' => $leccionario->getObservaciones(),
+            'estado' => $leccionario->getEstado(),
+            'firmado' => $leccionario->isFirmado(),
+            'fecha_registro' => $leccionario->getFechaRegistro()
         ];
 
         $pdf = new PdfGenerator();
-        $pdfContent = $pdf->generarLeccionario($data, $firma);
-        $pdf->enviarRespuesta($pdfContent, 'leccionario_' . $leccionario->fecha . '_' . $leccionario->id . '.pdf');
+        $pdfContent = $pdf->generarLeccionario($data, $firma, $firmaRevisor, $nombreRevisor);
+        $pdf->enviarRespuesta($pdfContent, 'leccionario_' . $leccionario->getFecha() . '_' . $leccionario->getId() . '.pdf');
     }
 }
